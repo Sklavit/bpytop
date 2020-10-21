@@ -16,11 +16,15 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
+from functools import partial
+
+import asyncio
 
 import os, sys, threading, signal, re, subprocess, logging, logging.handlers, argparse
+import trio
 import urllib.request
 from time import time, sleep, strftime, localtime
-from datetime import timedelta
+from datetime import timedelta, datetime
 from _thread import interrupt_main
 from collections import defaultdict
 from select import select
@@ -30,6 +34,40 @@ from math import ceil, floor
 from random import randint
 from shutil import which
 from typing import List, Set, Dict, Tuple, Optional, Union, Any, Callable, ContextManager, Iterable, Type, NamedTuple
+
+
+reporter = logging.getLogger("reporter")
+reporter.setLevel(level=logging.INFO)
+file_handler = logging.FileHandler("stats.csv")
+reporter.addHandler(file_handler)
+reporter.info("Timestamp - UTC,Event,CPU,used,free,available,total,other")
+
+
+def report(
+    event=None,
+	cpu_usage=None,
+    free=None,
+    total=None,
+    available=None,
+    used=None,
+    **kwargs,
+):
+    def format_optional(thing):
+        if thing is None:
+            return ""
+        else:
+            return thing
+
+    message = (
+        f"{str(datetime.utcnow())},{format_optional(event)},"
+		f"{format_optional(cpu_usage)},"
+        f"{format_optional(used)},{format_optional(free)},"
+        f"{format_optional(available)},{format_optional(total)},"
+        f"{format_optional(kwargs)}"
+    )
+    reporter.info(message)
+
+
 
 errors: List[str] = []
 try: import fcntl, termios, tty, pwd
@@ -2711,6 +2749,9 @@ class CpuCollector(Collector):
 		if CONFIG.check_temp and cls.got_sensors:
 			cls._collect_temps()
 
+		report(cpu_usage=cls.cpu_usage[0][-1])
+
+
 	@classmethod
 	def _collect_temps(cls):
 		temp: int = 1000
@@ -2836,6 +2877,7 @@ class CpuCollector(Collector):
 	@classmethod
 	def _draw(cls):
 		CpuBox._draw_fg()
+
 
 class MemCollector(Collector):
 	'''Collects memory and disks information'''
@@ -3014,6 +3056,9 @@ class MemCollector(Collector):
 		if disk_list != cls.old_disks:
 			MemBox.redraw = True
 			cls.old_disks = disk_list.copy()
+
+		for name, value in cls.string.items():
+			report(**cls.string)
 
 		cls.timestamp = time()
 
