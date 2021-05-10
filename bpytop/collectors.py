@@ -16,11 +16,10 @@ from typing import Any, Dict, List, Tuple, Union
 import threading
 
 from bpytop.bpytop_widgets import CpuBox, MemBox, NetBox, ProcBox
-from bpytop.config import CONFIG, errlog
+from bpytop.config import errlog
+from bpytop.old import THREADS
 from bpytop.old_classes import Menu
 from bpytop.old_functions import clean_quit, floating_humanizer, units_to_bytes
-from bpytop.terminal_engine import Draw
-from bpytop.terminal_widgets import Box
 from bpytop2 import DEBUG
 
 
@@ -103,7 +102,7 @@ class Collector:
 
 	@classmethod
 	def collect(cls, *collectors, draw_now: bool = True, interrupt: bool = False, proc_interrupt: bool = False, redraw: bool = False, only_draw: bool = False):
-		'''Setup collect queue for _runner'''
+		"""Setup collect queue for _runner"""
 		cls.collect_interrupt = interrupt
 		cls.proc_interrupt = proc_interrupt
 		cls.collect_idle.wait()
@@ -124,7 +123,7 @@ class Collector:
 		cls.collect_run.set()
 
 
-class Cpucollector(collector):
+class CpuCollector(Collector):
 	'''Collects cpu usage for cpu and cores, cpu frequency, load_avg, uptime and cpu temps'''
 	cpu_usage: List[List[int]] = []
 	cpu_temp: List[List[int]] = []

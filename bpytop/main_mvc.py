@@ -1,3 +1,5 @@
+import fcntl
+
 import termios
 
 import os
@@ -13,8 +15,9 @@ from bpytop.terminal_widgets import Box, Fx
 from bpytop.bpytop_widgets import CpuBox
 from bpytop.terminal_engine import Colors, Cursor, Draw
 from bpytop.old_functions import (
-	clean_quit, create_box,
+	clean_quit,
 )
+from engine.universe.terminal.terminal_engine import create_box
 from bpytop2 import (
 	errlog,
 )
@@ -314,3 +317,15 @@ class Terminal:
 		if out and text: out += " "
 		if text: out += f'{text}'
 		return f'\033]0;{out}\a'
+
+
+class Nonblocking(object):
+	"""Set nonblocking mode for device"""
+	def __init__(self, stream):
+		self.stream = stream
+		self.fd = self.stream.fileno()
+	def __enter__(self):
+		self.orig_fl = fcntl.fcntl(self.fd, fcntl.F_GETFL)
+		fcntl.fcntl(self.fd, fcntl.F_SETFL, self.orig_fl | os.O_NONBLOCK)
+	def __exit__(self, *args):
+		fcntl.fcntl(self.fd, fcntl.F_SETFL, self.orig_fl)

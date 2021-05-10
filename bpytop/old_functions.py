@@ -14,15 +14,17 @@ import re
 import subprocess
 
 from typing import Dict, List, Tuple, Union
-from bpytop.old_classes import (
-	Graphs, Menu,
-)
-from bpytop.collectors import Memcollector, Netcollector, Proccollector
-from bpytop.terminal_widgets import Box, Fx, Symbol
-from bpytop.bpytop_widgets import ProcBox
-from bpytop.terminal_engine import Color, Cursor, Draw
-from bpytop2 import CONFIG, THEME, errlog
-from bpytop.old_consts import UNITS
+
+from bpytop.env import SYSTEM
+# from bpytop.old_classes import (
+# 	Graphs, Menu,
+# )
+# from bpytop.collectors import Memcollector, Netcollector, Proccollector
+# from bpytop.terminal_widgets import Box, Fx, Symbol
+# from bpytop.bpytop_widgets import ProcBox
+# from bpytop.terminal_engine import Color, Cursor, Draw
+# from bpytop2 import CONFIG, THEME, errlog
+# from bpytop.old_consts import UNITS
 
 
 THREAD_ERROR: int = 0
@@ -72,46 +74,6 @@ def get_cpu_name() -> str:
 	name = " ".join(name.split())
 
 	return name
-
-
-def create_box(x: int = 0, y: int = 0, width: int = 0, height: int = 0, title: str = "", title2: str = "", line_color: Color = None, title_color: Color = None, fill: bool = True, box = None) -> str:
-	'''Create a box from a box object or by given arguments'''
-	out: str = f'{term.fg}{term.bg}'
-	if not line_color: line_color = THEME.div_line
-	if not title_color: title_color = THEME.title
-
-	#* Get values from box class if given
-	if box:
-		x = box.x
-		y = box.y
-		width = box.width
-		height =box.height
-		title = box.name
-	hlines: Tuple[int, int] = (y, y + height - 1)
-
-	out += f'{line_color}'
-
-	#* Draw all horizontal lines
-	for hpos in hlines:
-		out += f'{Cursor.to(hpos, x)}{Symbol.h_line * (width - 1)}'
-
-	#* Draw all vertical lines and fill if enabled
-	for hpos in range(hlines[0]+1, hlines[1]):
-		out += f'{Cursor.to(hpos, x)}{Symbol.v_line}{" " * (width - 2) if fill else Cursor.r(width - 2)}{Symbol.v_line}'
-
-	#* Draw corners
-	out += f'{Cursor.to(y, x)}{Symbol.left_up}\
-	{Cursor.to(y, x + width - 1)}{Symbol.right_up}\
-	{Cursor.to(y + height - 1, x)}{Symbol.left_down}\
-	{Cursor.to(y + height - 1, x + width - 1)}{Symbol.right_down}'
-
-	#* Draw titles if enabled
-	if title:
-		out += f'{Cursor.to(y, x + 2)}{Symbol.title_left}{title_color}{Fx.b}{title}{Fx.ub}{line_color}{Symbol.title_right}'
-	if title2:
-		out += f'{Cursor.to(hlines[1], x + 2)}{Symbol.title_left}{title_color}{Fx.b}{title2}{Fx.ub}{line_color}{Symbol.title_right}'
-
-	return f'{out}{term.fg}{Cursor.to(y + 1, x + 1)}'
 
 
 def now_sleeping(signum, frame):

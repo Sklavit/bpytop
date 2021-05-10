@@ -1,3 +1,5 @@
+from string import Template
+
 import os
 import sys
 import logging.handlers
@@ -8,60 +10,7 @@ from typing import List, Dict, Tuple, Union
 
 
 reporter = logging.getLogger("reporter")
-reporter.setLevel(level=logging.INFO)
-file_handler = logging.FileHandler("stats.csv")
-reporter.addHandler(file_handler)
-reporter.info("Timestamp - UTC,Event,CPU,used,free,available,total,other")
-
-# Setup self.config directory
-self_DIR: str = f'{os.path.expanduser("~")}/.self.config/bpytop'
-if not os.path.isdir(self_DIR):
-	try:
-		os.makedirs(self_DIR)
-		os.mkdir(f'{self_DIR}/themes')
-	except PermissionError:
-		print(f'ERROR!\nNo permission to write to "{self_DIR}" directory!')
-		raise SystemExit(1)
-config_file: str = f'{self_DIR}/bpytop.self.conf'
-
-
-#? Setup error logger ---------------------------------------------------------------->
-
-try:
-	errlog = logging.getLogger("ErrorLogger")
-	errlog.setLevel(logging.DEBUG)
-	eh = logging.handlers.RotatingFileHandler(f'{self_DIR}/error.log', maxBytes=1048576, backupCount=4)
-	eh.setLevel(logging.DEBUG)
-	eh.setFormatter(logging.Formatter("%(asctime)s | %(levelname)s: %(message)s", datefmt="%d/%m/%y (%X)"))
-	errlog.addHandler(eh)
-except PermissionError:
-	print(f'ERROR!\nNo permission to write to "{self_DIR}" directory!')
-	raise SystemExit(1)
-
-def report(
-    event=None,
-	cpu_usage=None,
-    free=None,
-    total=None,
-    available=None,
-    used=None,
-    **kwargs,
-):
-    def format_optional(thing):
-        if thing is None:
-            return ""
-        else:
-            return thing
-
-    message = (
-        f"{str(datetime.utcnow())},{format_optional(event)},"
-		f"{format_optional(cpu_usage)},"
-        f"{format_optional(used)},{format_optional(free)},"
-        f"{format_optional(available)},{format_optional(total)},"
-        f"{format_optional(kwargs)}"
-    )
-    reporter.info(message)
-
+errlog = logging.getLogger("ErrorLogger")
 
 
 errors: List[str] = []
@@ -73,35 +22,121 @@ except Exception as e: errors.append(f'{e}')
 
 SELF_START = time()
 
-SYSTEM: str
-if "linux" in sys.platform: SYSTEM = "Linux"
-elif "bsd" in sys.platform: SYSTEM = "BSD"
-elif "darwin" in sys.platform: SYSTEM = "MacOS"
-else: SYSTEM = "Other"
 
-if errors:
-	print ("ERROR!")
-	for error in errors:
-		print(error)
-	if SYSTEM == "Other":
-		print("\nUnsupported platform!\n")
-	else:
-		print("\nInstall required modules!\n")
-	raise SystemExit(1)
 
 VERSION: str = "1.0.44"
+
+#*?This is the template used to create the config file
+DEFAULT_CONF: Template = Template(f'#? Config file for bpytop v. {VERSION}' + '''
+
+#* Color theme, looks for a .theme file in "/usr/[local/]share/bpytop/themes" and "~/.config/bpytop/themes", "Default" for builtin default theme.
+#* Prefix name by a plus sign (+) for a theme located in user themes folder, i.e. color_theme="+monokai"
+color_theme="$color_theme"
+
+#* If the theme set background should be shown, set to False if you want terminal background transparency
+theme_background=$theme_background
+
+#* Set bpytop view mode, "full" for everything shown, "proc" for cpu stats and processes, "stat" for cpu, mem, disks and net stats shown.
+view_mode=$view_mode
+
+#* Update time in milliseconds, increases automatically if set below internal loops processing time, recommended 2000 ms or above for better sample times for graphs.
+update_ms=$update_ms
+
+#* Processes sorting, "pid" "program" "arguments" "threads" "user" "memory" "cpu lazy" "cpu responsive",
+#* "cpu lazy" updates top process over time, "cpu responsive" updates top process directly.
+proc_sorting="$proc_sorting"
+
+#* Reverse sorting order, True or False.
+proc_reversed=$proc_reversed
+
+#* Show processes as a tree
+proc_tree=$proc_tree
+
+#* Which depth the tree view should auto collapse processes at
+tree_depth=$tree_depth
+
+#* Use the cpu graph colors in the process list.
+proc_colors=$proc_colors
+
+#* Use a darkening gradient in the process list.
+proc_gradient=$proc_gradient
+
+#* If process cpu usage should be of the core it's running on or usage of the total available cpu power.
+proc_per_core=$proc_per_core
+
+#* Show process memory as bytes instead of percent
+proc_mem_bytes=$proc_mem_bytes
+
+#* Check cpu temperature, needs "osx-cpu-temp" on MacOS X.
+check_temp=$check_temp
+
+#* Which sensor to use for cpu temperature, use options menu to select from list of available sensors.
+cpu_sensor=$cpu_sensor
+
+#* Draw a clock at top of screen, formatting according to strftime, empty string to disable.
+draw_clock="$draw_clock"
+
+#* Update main ui in background when menus are showing, set this to false if the menus is flickering too much for comfort.
+background_update=$background_update
+
+#* Custom cpu model name, empty string to disable.
+custom_cpu_name="$custom_cpu_name"
+
+#* Optional filter for shown disks, should be last folder in path of a mountpoint, "root" replaces "/", separate multiple values with comma.
+#* Begin line with "exclude=" to change to exclude filter, oterwise defaults to "most include" filter. Example: disks_filter="exclude=boot, home"
+disks_filter="$disks_filter"
+
+#* Show graphs instead of meters for memory values.
+mem_graphs=$mem_graphs
+
+#* If swap memory should be shown in memory box.
+show_swap=$show_swap
+
+#* Show swap as a disk, ignores show_swap value above, inserts itself after first disk.
+swap_disk=$swap_disk
+
+#* If mem box should be split to also show disks info.
+show_disks=$show_disks
+
+#* Set fixed values for network graphs, default "10M" = 10 Mibibytes, possible units "K", "M", "G", append with "bit" for bits instead of bytes, i.e "100mbit"
+net_download="$net_download"
+net_upload="$net_upload"
+
+#* Start in network graphs auto rescaling mode, ignores any values set above and rescales down to 10 Kibibytes at the lowest.
+net_auto=$net_auto
+
+#* Sync the scaling for download and upload to whichever currently has the highest scale
+net_sync=$net_sync
+
+#* If the network graphs color gradient should scale to bandwith usage or auto scale, bandwith usage is based on "net_download" and "net_upload" values
+net_color_fixed=$net_color_fixed
+
+#* Show battery stats in top right if battery is present
+show_battery=$show_battery
+
+#* Show init screen at startup, the init screen is purely cosmetical
+show_init=$show_init
+
+#* Enable check for new version from github.com/aristocratos/bpytop at start.
+update_check=$update_check
+
+#* Set loglevel for "~/.config/bpytop/error.log" levels are: "ERROR" "WARNING" "INFO" "DEBUG".
+#* The level set includes all lower levels, i.e. "DEBUG" will show all logging info.
+log_level=$log_level
+''')
+
 
 
 
 #? Set up self.config class and load self.config ----------------------------------------------------------->
 
-class self.config:
+class Config:
 	'''Holds all self.config variables and functions for loading from and saving to disk'''
 	keys: List[str] = ["color_theme", "update_ms", "proc_sorting", "proc_reversed", "proc_tree", "check_temp", "draw_clock", "background_update", "custom_cpu_name",
 						"proc_colors", "proc_gradient", "proc_per_core", "proc_mem_bytes", "disks_filter", "update_check", "log_level", "mem_graphs", "show_swap",
 						"swap_disk", "show_disks", "net_download", "net_upload", "net_auto", "net_color_fixed", "show_init", "view_mode", "theme_background",
 						"net_sync", "show_battery", "tree_depth", "cpu_sensor"]
-	self.conf_dict: Dict[str, Union[str, int, bool]] = {}
+	conf_dict: Dict[str, Union[str, int, bool]] = {}
 	color_theme: str = "Default"
 	theme_background: bool = True
 	update_ms: int = 2000
@@ -158,23 +193,23 @@ class self.config:
 
 	changed: bool = False
 	recreate: bool = False
-	config_file: str = ""
+	config_file_path: str = ""
 
 	_initialized: bool = False
 
-	def __init__(self, path: str, DEBUG):
-		self.config_file = path
+	def __init__(self, config_file_path: str, is_debug: bool):
+		self.config_file_path = config_file_path
 
 		try:
 			self.init()
-			if DEBUG:
+			if is_debug:
 				errlog.setLevel(logging.DEBUG)
 			else:
 				errlog.setLevel(getattr(logging, self.log_level))
 				if self.log_level == "DEBUG":
 					self.DEBUG = True
 			errlog.info(f'New instance of bpytop version {VERSION} started with pid {os.getpid()}')
-			errlog.info(f'Loglevel set to {"DEBUG" if DEBUG else self.log_level}')
+			errlog.info(f'Loglevel set to {"DEBUG" if is_debug else self.log_level}')
 			errlog.debug(f'Using psutil version {".".join(str(x) for x in psutil.version_info)}')
 			errlog.debug(f'CMD: {" ".join(sys.argv)}')
 			if self.info:
@@ -216,10 +251,10 @@ class self.config:
 		'''Load config from file, set correct types for values and return a dict'''
 		new_config: Dict[str, Union[str, int, bool]] = {}
 		self.conf_file: str = ""
-		if os.path.isfile(self.config_file):
-			self.conf_file = self.config_file
-		elif os.path.isfile("/etc/bpytop.self.conf"):
-			self.conf_file = "/etc/bpytop.self.conf"
+		if os.path.isfile(self.config_file_path):
+			self.conf_file = self.config_file_path
+		elif os.path.isfile("/etc/bpytop.conf"):
+			self.conf_file = "/etc/bpytop.conf"
 		else:
 			return new_config
 		try:
@@ -268,16 +303,22 @@ class self.config:
 		return new_config
 
 	def save_config(self):
-		'''Save current self.config to self.config file if difference in values or version, creates a new file if not found'''
-		if not self.changed and not self.recreate: return
+		"""
+		Save current config to config file if difference in values or version,
+		creates a new file if not found.
+		"""
+		if not self.changed and not self.recreate:
+			return
+
 		try:
-			with open(self.config_file, "w" if os.path.isfile(self.config_file) else "x") as f:
-				f.write(DEFAULT_conf.substitute(self.self.conf_dict))
+			# model = "w" if os.path.isfile(self.config_file_path) else "x" # is it needed ?
+			with open(self.config_file_path, "w") as f:
+				f.write(DEFAULT_CONF.substitute(self.conf_dict))
 		except Exception as e:
 			errlog.exception(str(e))
 
 
-if psutil.version_info[0] < 5 or (psutil.version_info[0] == 5 and psutil.version_info[1] < 7):
-	warn = f'psutil version {".".join(str(x) for x in psutil.version_info)} detected, version 5.7.0 or later required for full functionality!'
-	print("WARNING!", warn)
-	errlog.warning(warn)
+
+
+
+

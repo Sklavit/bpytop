@@ -4,14 +4,13 @@ from math import ceil
 import psutil
 from typing import Dict, List, Tuple, Union
 
-from bpytop.config import CONFIG
 from bpytop.old_classes import (
 	Graph, Graphs, Menu, Meters,
 )
 from bpytop.collectors import Cpucollector, Memcollector, Netcollector, Proccollector
-from bpytop.old_functions import create_box, floating_humanizer, min_max, readfile
-from bpytop.terminal_engine import Cursor, Draw
-from bpytop.terminal_widgets import Box, Fx, Meter, SubBox, Symbol
+from bpytop.old_functions import floating_humanizer, min_max, readfile
+from engine.universe.terminal.terminal_engine import CursorChar, Draw, create_box
+from engine.universe.terminal.terminal_widgets import Box, Fx, Meter, SubBox, Symbol
 from bpytop2 import CPU_NAME, THEME
 
 
@@ -70,7 +69,7 @@ class CpuBox(Box, SubBox):
 		if not "M" in key.mouse:
 			key.mouse["M"] = [[cls.x + 10 + i, cls.y] for i in range(6)]
 		return (f'{create_box(box=cls, line_color=THEME.cpu_box)}'
-		f'{Cursor.to(cls.y, cls.x + 10)}{THEME.cpu_box(Symbol.title_left)}{Fx.b}{THEME.hi_fg("M")}{THEME.title("enu")}{Fx.ub}{THEME.cpu_box(Symbol.title_right)}'
+		f'{CursorChar.to(cls.y, cls.x + 10)}{THEME.cpu_box(Symbol.title_left)}{Fx.b}{THEME.hi_fg("M")}{THEME.title("enu")}{Fx.ub}{THEME.cpu_box(Symbol.title_right)}'
 		f'{create_box(x=cls.box_x, y=cls.box_y, width=cls.box_width, height=cls.box_height, line_color=THEME.div_line, fill=False, title=CPU_NAME[:cls.box_width - 14] if not CONFIG.custom_cpu_name else CONFIG.custom_cpu_name[:cls.box_width - 14])}')
 
 	@classmethod
@@ -131,7 +130,7 @@ class CpuBox(Box, SubBox):
 		if cls.resized or cls.redraw:
 			if not "m" in key.mouse:
 				key.mouse["m"] = [[cls.x + 16 + i, cls.y] for i in range(12)]
-			out_misc += f'{Cursor.to(cls.y, cls.x + 16)}{THEME.cpu_box(Symbol.title_left)}{Fx.b}{THEME.hi_fg("m")}{THEME.title}ode:{ARG_MODE or CONFIG.view_mode}{Fx.ub}{THEME.cpu_box(Symbol.title_right)}'
+			out_misc += f'{CursorChar.to(cls.y, cls.x + 16)}{THEME.cpu_box(Symbol.title_left)}{Fx.b}{THEME.hi_fg("m")}{THEME.title}ode:{ARG_MODE or CONFIG.view_mode}{Fx.ub}{THEME.cpu_box(Symbol.title_right)}'
 			Graphs.cpu["up"] = Graph(w - bw - 3, hh, THEME.gradient["cpu"], cpu.cpu_usage[0])
 			Graphs.cpu["down"] = Graph(w - bw - 3, h - hh, THEME.gradient["cpu"], cpu.cpu_usage[0], invert=True)
 			Meters.cpu = Meter(cpu.cpu_usage[0][-1], bw - (21 if cpu.got_sensors else 9), "cpu")
@@ -164,14 +163,14 @@ class CpuBox(Box, SubBox):
 			battery_len: int = len(f'{CONFIG.update_ms}') + (11 if cls.width >= 100 else 0) + len(battery_time) + len(f'{cls.battery_percent}')
 			battery_pos = cls.width - battery_len - 17
 			if (battery_pos != cls.old_battery_pos or battery_len != cls.old_battery_len) and cls.old_battery_pos > 0 and not cls.resized:
-				bat_out += f'{Cursor.to(y - 1, cls.old_battery_pos)}{THEME.cpu_box(Symbol.h_line * (cls.old_battery_len + 4))}'
+				bat_out += f'{CursorChar.to(y - 1, cls.old_battery_pos)}{THEME.cpu_box(Symbol.h_line * (cls.old_battery_len + 4))}'
 			cls.old_battery_pos, cls.old_battery_len = battery_pos, battery_len
-			bat_out += (f'{Cursor.to(y - 1, battery_pos)}{THEME.cpu_box(Symbol.title_left)}{Fx.b}{THEME.title}BAT{battery_symbol} {cls.battery_percent}%' +
+			bat_out += (f'{CursorChar.to(y - 1, battery_pos)}{THEME.cpu_box(Symbol.title_left)}{Fx.b}{THEME.title}BAT{battery_symbol} {cls.battery_percent}%' +
 						("" if cls.width < 100 else f' {Fx.ub}{Meters.battery(cls.battery_percent)}{Fx.b}') +
 				f'{THEME.title}{battery_time}{Fx.ub}{THEME.cpu_box(Symbol.title_right)}')
 			Draw.buffer("battery", f'{bat_out}{term.fg}', only_save=Menu.active)
 		elif cls.battery_clear:
-			out += f'{Cursor.to(y - 1, cls.old_battery_pos)}{THEME.cpu_box(Symbol.h_line * (cls.old_battery_len + 4))}'
+			out += f'{CursorChar.to(y - 1, cls.old_battery_pos)}{THEME.cpu_box(Symbol.h_line * (cls.old_battery_len + 4))}'
 			cls.battery_clear = False
 			cls.battery_percent = 1000
 			cls.battery_secs = 0
@@ -185,25 +184,25 @@ class CpuBox(Box, SubBox):
 		ccw = (bw + 1) // cls.box_columns
 		if cpu.cpu_freq:
 			freq: str = f'{cpu.cpu_freq} Mhz' if cpu.cpu_freq < 1000 else f'{float(cpu.cpu_freq / 1000):.1f} GHz'
-			out += f'{Cursor.to(by - 1, bx + bw - 9)}{THEME.div_line(Symbol.title_left)}{Fx.b}{THEME.title(freq)}{Fx.ub}{THEME.div_line(Symbol.title_right)}'
-		out += (f'{Cursor.to(y, x)}{Graphs.cpu["up"](None if cls.resized else cpu.cpu_usage[0][-1])}{Cursor.to(y + hh, x)}{Graphs.cpu["down"](None if cls.resized else cpu.cpu_usage[0][-1])}'
-				f'{THEME.main_fg}{Cursor.to(by + cy, bx + cx)}{Fx.b}{"CPU "}{Fx.ub}{Meters.cpu(cpu.cpu_usage[0][-1])}'
+			out += f'{CursorChar.to(by - 1, bx + bw - 9)}{THEME.div_line(Symbol.title_left)}{Fx.b}{THEME.title(freq)}{Fx.ub}{THEME.div_line(Symbol.title_right)}'
+		out += (f'{CursorChar.to(y, x)}{Graphs.cpu["up"](None if cls.resized else cpu.cpu_usage[0][-1])}{CursorChar.to(y + hh, x)}{Graphs.cpu["down"](None if cls.resized else cpu.cpu_usage[0][-1])}'
+				f'{THEME.main_fg}{CursorChar.to(by + cy, bx + cx)}{Fx.b}{"CPU "}{Fx.ub}{Meters.cpu(cpu.cpu_usage[0][-1])}'
 				f'{THEME.gradient["cpu"][cpu.cpu_usage[0][-1]]}{cpu.cpu_usage[0][-1]:>4}{THEME.main_fg}%')
 		if cpu.got_sensors:
-				out += (f'{THEME.inactive_fg} ⡀⡀⡀⡀⡀{Cursor.l(5)}{THEME.gradient["temp"][min_max(cpu.cpu_temp[0][-1], 0, cpu.cpu_temp_crit) * 100 // cpu.cpu_temp_crit]}{Graphs.temps[0](None if cls.resized else cpu.cpu_temp[0][-1])}'
+				out += (f'{THEME.inactive_fg} ⡀⡀⡀⡀⡀{CursorChar.l(5)}{THEME.gradient["temp"][min_max(cpu.cpu_temp[0][-1], 0, cpu.cpu_temp_crit) * 100 // cpu.cpu_temp_crit]}{Graphs.temps[0](None if cls.resized else cpu.cpu_temp[0][-1])}'
 						f'{cpu.cpu_temp[0][-1]:>4}{THEME.main_fg}°C')
 
 		cy += 1
 		for n in range(1, THREADS + 1):
-			out += f'{THEME.main_fg}{Cursor.to(by + cy, bx + cx)}{Fx.b + "C" + Fx.ub if THREADS < 100 else ""}{str(n):<{2 if cls.column_size == 0 else 3}}'
+			out += f'{THEME.main_fg}{CursorChar.to(by + cy, bx + cx)}{Fx.b + "C" + Fx.ub if THREADS < 100 else ""}{str(n):<{2 if cls.column_size == 0 else 3}}'
 			if cls.column_size > 0:
-				out += f'{THEME.inactive_fg}{"⡀" * (5 * cls.column_size)}{Cursor.l(5 * cls.column_size)}{THEME.gradient["cpu"][cpu.cpu_usage[n][-1]]}{Graphs.cores[n - 1](None if cls.resized else cpu.cpu_usage[n][-1])}'
+				out += f'{THEME.inactive_fg}{"⡀" * (5 * cls.column_size)}{CursorChar.l(5 * cls.column_size)}{THEME.gradient["cpu"][cpu.cpu_usage[n][-1]]}{Graphs.cores[n - 1](None if cls.resized else cpu.cpu_usage[n][-1])}'
 			else:
 				out += f'{THEME.gradient["cpu"][cpu.cpu_usage[n][-1]]}'
 			out += f'{cpu.cpu_usage[n][-1]:>{3 if cls.column_size < 2 else 4}}{THEME.main_fg}%'
 			if cpu.got_sensors:
 				if cls.column_size > 1:
-					out += f'{THEME.inactive_fg} ⡀⡀⡀⡀⡀{Cursor.l(5)}{THEME.gradient["temp"][100 if cpu.cpu_temp[n][-1] >= cpu.cpu_temp_crit else (cpu.cpu_temp[n][-1] * 100 // cpu.cpu_temp_crit)]}{Graphs.temps[n](None if cls.resized else cpu.cpu_temp[n][-1])}'
+					out += f'{THEME.inactive_fg} ⡀⡀⡀⡀⡀{CursorChar.l(5)}{THEME.gradient["temp"][100 if cpu.cpu_temp[n][-1] >= cpu.cpu_temp_crit else (cpu.cpu_temp[n][-1] * 100 // cpu.cpu_temp_crit)]}{Graphs.temps[n](None if cls.resized else cpu.cpu_temp[n][-1])}'
 				else:
 					out += f'{THEME.gradient["temp"][100 if cpu.cpu_temp[n][-1] >= cpu.cpu_temp_crit else (cpu.cpu_temp[n][-1] * 100 // cpu.cpu_temp_crit)]}'
 				out += f'{cpu.cpu_temp[n][-1]:>4}{THEME.main_fg}°C'
@@ -224,9 +223,9 @@ class CpuBox(Box, SubBox):
 				lavg = f'L {" ".join(str(round(l, 1)) for l in cpu.load_avg):^11.11}'
 			else:
 				lavg = f'{" ".join(str(round(l, 1)) for l in cpu.load_avg[:2]):^7.7}'
-			out += f'{Cursor.to(by + cy, bx + cx)}{THEME.main_fg}{lavg}{THEME.div_line(Symbol.v_line)}'
+			out += f'{CursorChar.to(by + cy, bx + cx)}{THEME.main_fg}{lavg}{THEME.div_line(Symbol.v_line)}'
 
-		out += f'{Cursor.to(y + h - 1, x + 1)}{THEME.graph_text}up {cpu.uptime}'
+		out += f'{CursorChar.to(y + h - 1, x + 1)}{THEME.graph_text}up {cpu.uptime}'
 
 
 		Draw.buffer(cls.buffer, f'{out_misc}{out}{term.fg}', only_save=Menu.active)
@@ -301,10 +300,10 @@ class MemBox(Box):
 		out: str = ""
 		out += f'{create_box(box=cls, line_color=THEME.mem_box)}'
 		if CONFIG.show_disks:
-			out += (f'{Cursor.to(cls.y, cls.divider + 2)}{THEME.mem_box(Symbol.title_left)}{Fx.b}{THEME.title("disks")}{Fx.ub}{THEME.mem_box(Symbol.title_right)}'
-					f'{Cursor.to(cls.y, cls.divider)}{THEME.mem_box(Symbol.div_up)}'
-					f'{Cursor.to(cls.y + cls.height - 1, cls.divider)}{THEME.mem_box(Symbol.div_down)}{THEME.div_line}'
-					f'{"".join(f"{Cursor.to(cls.y + i, cls.divider)}{Symbol.v_line}" for i in range(1, cls.height - 1))}')
+			out += (f'{CursorChar.to(cls.y, cls.divider + 2)}{THEME.mem_box(Symbol.title_left)}{Fx.b}{THEME.title("disks")}{Fx.ub}{THEME.mem_box(Symbol.title_right)}'
+					f'{CursorChar.to(cls.y, cls.divider)}{THEME.mem_box(Symbol.div_up)}'
+					f'{CursorChar.to(cls.y + cls.height - 1, cls.divider)}{THEME.mem_box(Symbol.div_down)}{THEME.div_line}'
+					f'{"".join(f"{CursorChar.to(cls.y + i, cls.divider)}{Symbol.v_line}" for i in range(1, cls.height - 1))}')
 		return out
 
 	@classmethod
@@ -350,12 +349,12 @@ class MemBox(Box):
 						Meters.disks_free[name] = Meter(mem.disks[name]["free_percent"], cls.disk_meter, "free")
 			if not "g" in key.mouse:
 				key.mouse["g"] = [[x + cls.mem_width - 8 + i, y-1] for i in range(5)]
-			out_misc += (f'{Cursor.to(y - 1, x + cls.mem_width - 9)}{THEME.mem_box(Symbol.title_left)}{Fx.b if CONFIG.mem_graphs else ""}'
+			out_misc += (f'{CursorChar.to(y - 1, x + cls.mem_width - 9)}{THEME.mem_box(Symbol.title_left)}{Fx.b if CONFIG.mem_graphs else ""}'
 				f'{THEME.hi_fg("g")}{THEME.title("raph")}{Fx.ub}{THEME.mem_box(Symbol.title_right)}')
 			if CONFIG.show_disks:
 				if not "s" in key.mouse:
 					key.mouse["s"] = [[x + w - 6 + i, y-1] for i in range(4)]
-				out_misc += (f'{Cursor.to(y - 1, x + w - 7)}{THEME.mem_box(Symbol.title_left)}{Fx.b if CONFIG.swap_disk else ""}'
+				out_misc += (f'{CursorChar.to(y - 1, x + w - 7)}{THEME.mem_box(Symbol.title_left)}{Fx.b if CONFIG.swap_disk else ""}'
 				f'{THEME.hi_fg("s")}{THEME.title("wap")}{Fx.ub}{THEME.mem_box(Symbol.title_right)}')
 
 			if collector.collect_interrupt: return
@@ -364,61 +363,61 @@ class MemBox(Box):
 			#* Mem
 			cx = 1; cy = 1
 
-			out += f'{Cursor.to(y, x + 1)}{THEME.title}{Fx.b}Total:{mem.string["total"]:>{cls.mem_width - 9}}{Fx.ub}{THEME.main_fg}'
+			out += f'{CursorChar.to(y, x + 1)}{THEME.title}{Fx.b}Total:{mem.string["total"]:>{cls.mem_width - 9}}{Fx.ub}{THEME.main_fg}'
 			if cls.graph_height > 0:
-				gli = f'{Cursor.l(2)}{THEME.mem_box(Symbol.title_right)}{THEME.div_line}{Symbol.h_line * (cls.mem_width - 1)}{"" if CONFIG.show_disks else THEME.mem_box}{Symbol.title_left}{Cursor.l(cls.mem_width - 1)}{THEME.title}'
+				gli = f'{CursorChar.l(2)}{THEME.mem_box(Symbol.title_right)}{THEME.div_line}{Symbol.h_line * (cls.mem_width - 1)}{"" if CONFIG.show_disks else THEME.mem_box}{Symbol.title_left}{CursorChar.l(cls.mem_width - 1)}{THEME.title}'
 			if cls.graph_height >= 2:
-				gbg = f'{Cursor.l(1)}'
-				gmv = f'{Cursor.l(cls.mem_width - 2)}{Cursor.u(cls.graph_height - 1)}'
+				gbg = f'{CursorChar.l(1)}'
+				gmv = f'{CursorChar.l(cls.mem_width - 2)}{CursorChar.u(cls.graph_height - 1)}'
 
 			big_mem: bool = True if cls.mem_width > 21 else False
 			for name in cls.mem_names:
 				if collector.collect_interrupt: return
 				if cls.mem_size > 2:
-					out += (f'{Cursor.to(y + cy, x + cx)}{gli}{name.capitalize()[:None if big_mem else 5] + ":":<{1 if big_mem else 6.6}}{Cursor.to(y + cy, x + cx + cls.mem_width - 3 - (len(mem.string[name])))}{Fx.trans(mem.string[name])}'
-							f'{Cursor.to(y + cy + 1, x + cx)}{gbg}{Meters.mem[name](None if cls.resized else mem.percent[name])}{gmv}{str(mem.percent[name]) + "%":>4}')
+					out += (f'{CursorChar.to(y + cy, x + cx)}{gli}{name.capitalize()[:None if big_mem else 5] + ":":<{1 if big_mem else 6.6}}{CursorChar.to(y + cy, x + cx + cls.mem_width - 3 - (len(mem.string[name])))}{Fx.trans(mem.string[name])}'
+							f'{CursorChar.to(y + cy + 1, x + cx)}{gbg}{Meters.mem[name](None if cls.resized else mem.percent[name])}{gmv}{str(mem.percent[name]) + "%":>4}')
 					cy += 2 if not cls.graph_height else cls.graph_height + 1
 				else:
-					out += f'{Cursor.to(y + cy, x + cx)}{name.capitalize():{5.5 if cls.mem_size > 1 else 1.1}} {gbg}{Meters.mem[name](None if cls.resized else mem.percent[name])}{mem.string[name][:None if cls.mem_size > 1 else -2]:>{9 if cls.mem_size > 1 else 7}}'
+					out += f'{CursorChar.to(y + cy, x + cx)}{name.capitalize():{5.5 if cls.mem_size > 1 else 1.1}} {gbg}{Meters.mem[name](None if cls.resized else mem.percent[name])}{mem.string[name][:None if cls.mem_size > 1 else -2]:>{9 if cls.mem_size > 1 else 7}}'
 					cy += 1 if not cls.graph_height else cls.graph_height
 			#* Swap
 			if cls.swap_on and CONFIG.show_swap and not CONFIG.swap_disk and mem.swap_string:
 				if h - cy > 5:
-					if cls.graph_height > 0: out += f'{Cursor.to(y + cy, x + cx)}{gli}'
+					if cls.graph_height > 0: out += f'{CursorChar.to(y + cy, x + cx)}{gli}'
 					cy += 1
 
-				out += f'{Cursor.to(y + cy, x + cx)}{THEME.title}{Fx.b}Swap:{mem.swap_string["total"]:>{cls.mem_width - 8}}{Fx.ub}{THEME.main_fg}'
+				out += f'{CursorChar.to(y + cy, x + cx)}{THEME.title}{Fx.b}Swap:{mem.swap_string["total"]:>{cls.mem_width - 8}}{Fx.ub}{THEME.main_fg}'
 				cy += 1
 				for name in cls.swap_names:
 					if collector.collect_interrupt: return
 					if cls.mem_size > 2:
-						out += (f'{Cursor.to(y + cy, x + cx)}{gli}{name.capitalize()[:None if big_mem else 5] + ":":<{1 if big_mem else 6.6}}{Cursor.to(y + cy, x + cx + cls.mem_width - 3 - (len(mem.swap_string[name])))}{Fx.trans(mem.swap_string[name])}'
-								f'{Cursor.to(y + cy + 1, x + cx)}{gbg}{Meters.swap[name](None if cls.resized else mem.swap_percent[name])}{gmv}{str(mem.swap_percent[name]) + "%":>4}')
+						out += (f'{CursorChar.to(y + cy, x + cx)}{gli}{name.capitalize()[:None if big_mem else 5] + ":":<{1 if big_mem else 6.6}}{CursorChar.to(y + cy, x + cx + cls.mem_width - 3 - (len(mem.swap_string[name])))}{Fx.trans(mem.swap_string[name])}'
+								f'{CursorChar.to(y + cy + 1, x + cx)}{gbg}{Meters.swap[name](None if cls.resized else mem.swap_percent[name])}{gmv}{str(mem.swap_percent[name]) + "%":>4}')
 						cy += 2 if not cls.graph_height else cls.graph_height + 1
 					else:
-						out += f'{Cursor.to(y + cy, x + cx)}{name.capitalize():{5.5 if cls.mem_size > 1 else 1.1}} {gbg}{Meters.swap[name](None if cls.resized else mem.swap_percent[name])}{mem.swap_string[name][:None if cls.mem_size > 1 else -2]:>{9 if cls.mem_size > 1 else 7}}'; cy += 1 if not cls.graph_height else cls.graph_height
+						out += f'{CursorChar.to(y + cy, x + cx)}{name.capitalize():{5.5 if cls.mem_size > 1 else 1.1}} {gbg}{Meters.swap[name](None if cls.resized else mem.swap_percent[name])}{mem.swap_string[name][:None if cls.mem_size > 1 else -2]:>{9 if cls.mem_size > 1 else 7}}'; cy += 1 if not cls.graph_height else cls.graph_height
 
-			if cls.graph_height > 0 and not cy == h: out += f'{Cursor.to(y + cy, x + cx)}{gli}'
+			if cls.graph_height > 0 and not cy == h: out += f'{CursorChar.to(y + cy, x + cx)}{gli}'
 
 			#* Disks
 			if CONFIG.show_disks and mem.disks:
 				cx = x + cls.mem_width - 1; cy = 0
 				big_disk: bool = True if cls.disks_width >= 25 else False
-				gli = f'{Cursor.l(2)}{THEME.div_line}{Symbol.title_right}{Symbol.h_line * cls.disks_width}{THEME.mem_box}{Symbol.title_left}{Cursor.l(cls.disks_width - 1)}'
+				gli = f'{CursorChar.l(2)}{THEME.div_line}{Symbol.title_right}{Symbol.h_line * cls.disks_width}{THEME.mem_box}{Symbol.title_left}{CursorChar.l(cls.disks_width - 1)}'
 				for name, item in mem.disks.items():
 					if collector.collect_interrupt: return
 					if not name in Meters.disks_used:
 						continue
 					if cy > h - 2: break
-					out += Fx.trans(f'{Cursor.to(y + cy, x + cx)}{gli}{THEME.title}{Fx.b}{item["name"]:{cls.disks_width - 2}.12}{Cursor.to(y + cy, x + cx + cls.disks_width - 11)}{item["total"][:None if big_disk else -2]:>9}')
-					out += f'{Cursor.to(y + cy, x + cx + (cls.disks_width // 2) - (len(item["io"]) // 2) - 2)}{Fx.ub}{THEME.main_fg}{item["io"]}{Fx.ub}{THEME.main_fg}{Cursor.to(y + cy + 1, x + cx)}'
+					out += Fx.trans(f'{CursorChar.to(y + cy, x + cx)}{gli}{THEME.title}{Fx.b}{item["name"]:{cls.disks_width - 2}.12}{CursorChar.to(y + cy, x + cx + cls.disks_width - 11)}{item["total"][:None if big_disk else -2]:>9}')
+					out += f'{CursorChar.to(y + cy, x + cx + (cls.disks_width // 2) - (len(item["io"]) // 2) - 2)}{Fx.ub}{THEME.main_fg}{item["io"]}{Fx.ub}{THEME.main_fg}{CursorChar.to(y + cy + 1, x + cx)}'
 					out += f'Used:{str(item["used_percent"]) + "%":>4} ' if big_disk else "U "
 					out += f'{Meters.disks_used[name]}{item["used"][:None if big_disk else -2]:>{9 if big_disk else 7}}'
 					cy += 2
 
 					if len(mem.disks) * 3 <= h + 1:
 						if cy > h - 1: break
-						out += Cursor.to(y + cy, x + cx)
+						out += CursorChar.to(y + cy, x + cx)
 						out += f'Free:{str(item["free_percent"]) + "%":>4} ' if big_disk else f'{"F "}'
 						out += f'{Meters.disks_free[name]}{item["free"][:None if big_disk else -2]:>{9 if big_disk else 7}}'
 						cy += 1
@@ -487,16 +486,16 @@ class NetBox(Box, SubBox):
 				key.mouse["z"] = [[x+w - len(net.nic[:10]) - 14 + i, y-1] for i in range(4)]
 
 
-			out_misc += (f'{Cursor.to(y - 1, x + w - 25)}{THEME.net_box}{Symbol.h_line * (10 - len(net.nic[:10]))}{Symbol.title_left}{Fx.b if reset else ""}{THEME.hi_fg("z")}{THEME.title("ero")}'
+			out_misc += (f'{CursorChar.to(y - 1, x + w - 25)}{THEME.net_box}{Symbol.h_line * (10 - len(net.nic[:10]))}{Symbol.title_left}{Fx.b if reset else ""}{THEME.hi_fg("z")}{THEME.title("ero")}'
 				f'{Fx.ub}{THEME.net_box(Symbol.title_right)}{term.fg}'
 				f'{THEME.net_box}{Symbol.title_left}{Fx.b}{THEME.hi_fg("<b")} {THEME.title(net.nic[:10])} {THEME.hi_fg("n>")}{Fx.ub}{THEME.net_box(Symbol.title_right)}{term.fg}')
 			if w - len(net.nic[:10]) - 20 > 6:
 				if not "a" in key.mouse: key.mouse["a"] = [[x+w - 20 - len(net.nic[:10]) + i, y-1] for i in range(4)]
-				out_misc += (f'{Cursor.to(y - 1, x + w - 21 - len(net.nic[:10]))}{THEME.net_box(Symbol.title_left)}{Fx.b if net.auto_min else ""}{THEME.hi_fg("a")}{THEME.title("uto")}'
+				out_misc += (f'{CursorChar.to(y - 1, x + w - 21 - len(net.nic[:10]))}{THEME.net_box(Symbol.title_left)}{Fx.b if net.auto_min else ""}{THEME.hi_fg("a")}{THEME.title("uto")}'
 				f'{Fx.ub}{THEME.net_box(Symbol.title_right)}{term.fg}')
 			if w - len(net.nic[:10]) - 20 > 13:
 				if not "y" in key.mouse: key.mouse["y"] = [[x+w - 26 - len(net.nic[:10]) + i, y-1] for i in range(4)]
-				out_misc += (f'{Cursor.to(y - 1, x + w - 27 - len(net.nic[:10]))}{THEME.net_box(Symbol.title_left)}{Fx.b if CONFIG.net_sync else ""}{THEME.title("s")}{THEME.hi_fg("y")}{THEME.title("nc")}'
+				out_misc += (f'{CursorChar.to(y - 1, x + w - 27 - len(net.nic[:10]))}{THEME.net_box(Symbol.title_left)}{Fx.b if CONFIG.net_sync else ""}{THEME.title("s")}{THEME.hi_fg("y")}{THEME.title("nc")}'
 				f'{Fx.ub}{THEME.net_box(Symbol.title_right)}{term.fg}')
 			Draw.buffer("net_misc", out_misc, only_save=True)
 
@@ -508,22 +507,22 @@ class NetBox(Box, SubBox):
 			if stats["redraw"] or cls.resized:
 				Graphs.net[direction] = Graph(w - bw - 3, cls.graph_height[direction], THEME.gradient[direction], stats["speed"], max_value=net.sync_top if CONFIG.net_sync else stats["graph_top"],
 					invert=False if direction == "download" else True, color_max_value=net.net_min.get(direction) if CONFIG.net_color_fixed else None)
-			out += f'{Cursor.to(y if direction == "download" else y + cls.graph_height["download"], x)}{Graphs.net[direction](None if stats["redraw"] else stats["speed"][-1])}'
+			out += f'{CursorChar.to(y if direction == "download" else y + cls.graph_height["download"], x)}{Graphs.net[direction](None if stats["redraw"] else stats["speed"][-1])}'
 
-			out += (f'{Cursor.to(by + cy, bx)}{THEME.main_fg}{cls.symbols[direction]} {strings["byte_ps"]:<10.10}' +
-					("" if bw < 20 else f'{Cursor.to(by + cy, bx + bw - 12)}{"(" + strings["bit_ps"] + ")":>12.12}'))
+			out += (f'{CursorChar.to(by + cy, bx)}{THEME.main_fg}{cls.symbols[direction]} {strings["byte_ps"]:<10.10}' +
+					("" if bw < 20 else f'{CursorChar.to(by + cy, bx + bw - 12)}{"(" + strings["bit_ps"] + ")":>12.12}'))
 			cy += 1 if bh != 3 else 2
 			if bh >= 6:
-				out += f'{Cursor.to(by + cy, bx)}{cls.symbols[direction]} {"Top:"}{Cursor.to(by + cy, bx + bw - 12)}{"(" + strings["top"] + ")":>12.12}'
+				out += f'{CursorChar.to(by + cy, bx)}{cls.symbols[direction]} {"Top:"}{CursorChar.to(by + cy, bx + bw - 12)}{"(" + strings["top"] + ")":>12.12}'
 				cy += 1
 			if bh >= 4:
-				out += f'{Cursor.to(by + cy, bx)}{cls.symbols[direction]} {"Total:"}{Cursor.to(by + cy, bx + bw - 10)}{strings["total"]:>10.10}'
+				out += f'{CursorChar.to(by + cy, bx)}{cls.symbols[direction]} {"Total:"}{CursorChar.to(by + cy, bx + bw - 10)}{strings["total"]:>10.10}'
 				if bh > 2 and bh % 2: cy += 2
 				else: cy += 1
 			stats["redraw"] = False
 
-		out += (f'{Cursor.to(y, x)}{THEME.graph_text(net.sync_string if CONFIG.net_sync else net.strings[net.nic]["download"]["graph_top"])}'
-				f'{Cursor.to(y + h - 1, x)}{THEME.graph_text(net.sync_string if CONFIG.net_sync else net.strings[net.nic]["upload"]["graph_top"])}')
+		out += (f'{CursorChar.to(y, x)}{THEME.graph_text(net.sync_string if CONFIG.net_sync else net.strings[net.nic]["download"]["graph_top"])}'
+				f'{CursorChar.to(y + h - 1, x)}{THEME.graph_text(net.sync_string if CONFIG.net_sync else net.strings[net.nic]["upload"]["graph_top"])}')
 
 		Draw.buffer(cls.buffer, f'{out_misc}{out}{term.fg}', only_save=Menu.active)
 		cls.redraw = cls.resized = False
@@ -711,15 +710,15 @@ class ProcBox(Box):
 				if cls.current_y != cls.y + 8 or cls.resized or Graphs.detailed_cpu is NotImplemented:
 					cls.current_y = cls.y + 8
 					cls.current_h = cls.height - 8
-					for i in range(7): out_misc += f'{Cursor.to(dy + i, x)}{" " * w}'
-					out_misc += (f'{Cursor.to(dy + 7, x - 1)}{THEME.proc_box}{Symbol.title_right}{Symbol.h_line * w}{Symbol.title_left}'
-					f'{Cursor.to(dy + 7, x + 1)}{THEME.proc_box(Symbol.title_left)}{Fx.b}{THEME.title(cls.name)}{Fx.ub}{THEME.proc_box(Symbol.title_right)}{THEME.div_line}')
+					for i in range(7): out_misc += f'{CursorChar.to(dy + i, x)}{" " * w}'
+					out_misc += (f'{CursorChar.to(dy + 7, x - 1)}{THEME.proc_box}{Symbol.title_right}{Symbol.h_line * w}{Symbol.title_left}'
+					f'{CursorChar.to(dy + 7, x + 1)}{THEME.proc_box(Symbol.title_left)}{Fx.b}{THEME.title(cls.name)}{Fx.ub}{THEME.proc_box(Symbol.title_right)}{THEME.div_line}')
 					for i in range(7):
-						out_misc += f'{Cursor.to(dy + i, dgx + dgw + 1)}{Symbol.v_line}'
+						out_misc += f'{CursorChar.to(dy + i, dgx + dgw + 1)}{Symbol.v_line}'
 
-				out_misc += (f'{Cursor.to(dy - 1, x - 1)}{THEME.proc_box}{Symbol.left_up}{Symbol.h_line * w}{Symbol.right_up}'
-					f'{Cursor.to(dy - 1, dgx + dgw + 1)}{Symbol.div_up}'
-					f'{Cursor.to(dy - 1, x + 1)}{THEME.proc_box(Symbol.title_left)}{Fx.b}{THEME.title(str(proc.details["pid"]))}{Fx.ub}{THEME.proc_box(Symbol.title_right)}'
+				out_misc += (f'{CursorChar.to(dy - 1, x - 1)}{THEME.proc_box}{Symbol.left_up}{Symbol.h_line * w}{Symbol.right_up}'
+					f'{CursorChar.to(dy - 1, dgx + dgw + 1)}{Symbol.div_up}'
+					f'{CursorChar.to(dy - 1, x + 1)}{THEME.proc_box(Symbol.title_left)}{Fx.b}{THEME.title(str(proc.details["pid"]))}{Fx.ub}{THEME.proc_box(Symbol.title_right)}'
 					f'{THEME.proc_box(Symbol.title_left)}{Fx.b}{THEME.title(proc.details["name"][:(dgw - 11)])}{Fx.ub}{THEME.proc_box(Symbol.title_right)}')
 
 				if cls.selected == 0:
@@ -727,8 +726,8 @@ class ProcBox(Box):
 				if cls.selected == 0 and not killed:
 					key.mouse["t"] = [[dx+2 + i, dy-1] for i in range(9)]
 
-				out_misc += (f'{Cursor.to(dy - 1, dx + dw - 11)}{THEME.proc_box(Symbol.title_left)}{Fx.b}{title if cls.selected > 0 else THEME.title}close{Fx.ub} {main if cls.selected > 0 else THEME.main_fg}{Symbol.enter}{THEME.proc_box(Symbol.title_right)}'
-					f'{Cursor.to(dy - 1, dx + 1)}{THEME.proc_box(Symbol.title_left)}{Fx.b}{hi}t{title}erminate{Fx.ub}{THEME.proc_box(Symbol.title_right)}')
+				out_misc += (f'{CursorChar.to(dy - 1, dx + dw - 11)}{THEME.proc_box(Symbol.title_left)}{Fx.b}{title if cls.selected > 0 else THEME.title}close{Fx.ub} {main if cls.selected > 0 else THEME.main_fg}{Symbol.enter}{THEME.proc_box(Symbol.title_right)}'
+					f'{CursorChar.to(dy - 1, dx + 1)}{THEME.proc_box(Symbol.title_left)}{Fx.b}{hi}t{title}erminate{Fx.ub}{THEME.proc_box(Symbol.title_right)}')
 				if dw > 28:
 					if cls.selected == 0 and not killed and not "k" in key.mouse: key.mouse["k"] = [[dx + 13 + i, dy-1] for i in range(4)]
 					out_misc += f'{THEME.proc_box(Symbol.title_left)}{Fx.b}{hi}k{title}ill{Fx.ub}{THEME.proc_box(Symbol.title_right)}'
@@ -749,9 +748,9 @@ class ProcBox(Box):
 					cls.current_y = cls.y
 					cls.current_h = cls.height
 					y, h = cls.y + 1, cls.height - 2
-					out_misc += (f'{Cursor.to(y - 1, x - 1)}{THEME.proc_box}{Symbol.left_up}{Symbol.h_line * w}{Symbol.right_up}'
-						f'{Cursor.to(y - 1, x + 1)}{THEME.proc_box(Symbol.title_left)}{Fx.b}{THEME.title(cls.name)}{Fx.ub}{THEME.proc_box(Symbol.title_right)}'
-						f'{Cursor.to(y + 7, x - 1)}{THEME.proc_box(Symbol.v_line)}{Cursor.r(w)}{THEME.proc_box(Symbol.v_line)}')
+					out_misc += (f'{CursorChar.to(y - 1, x - 1)}{THEME.proc_box}{Symbol.left_up}{Symbol.h_line * w}{Symbol.right_up}'
+						f'{CursorChar.to(y - 1, x + 1)}{THEME.proc_box(Symbol.title_left)}{Fx.b}{THEME.title(cls.name)}{Fx.ub}{THEME.proc_box(Symbol.title_right)}'
+						f'{CursorChar.to(y + 7, x - 1)}{THEME.proc_box(Symbol.v_line)}{CursorChar.r(w)}{THEME.proc_box(Symbol.v_line)}')
 				cls.select_max = cls.height - 3
 
 
@@ -761,23 +760,23 @@ class ProcBox(Box):
 				key.mouse["right"] = [[sort_pos + len(CONFIG.proc_sorting) + 3 + i, y-1] for i in range(3)]
 
 
-			out_misc += (f'{Cursor.to(y - 1, x + 8)}{THEME.proc_box(Symbol.h_line * (w - 9))}' +
-						 ("" if not proc.detailed else f"{Cursor.to(dy + 7, dgx + dgw + 1)}{THEME.proc_box(Symbol.div_down)}") +
-				f'{Cursor.to(y - 1, sort_pos)}{THEME.proc_box(Symbol.title_left)}{Fx.b}{THEME.hi_fg("<")} {THEME.title(CONFIG.proc_sorting)} '
+			out_misc += (f'{CursorChar.to(y - 1, x + 8)}{THEME.proc_box(Symbol.h_line * (w - 9))}' +
+						 ("" if not proc.detailed else f"{CursorChar.to(dy + 7, dgx + dgw + 1)}{THEME.proc_box(Symbol.div_down)}") +
+				f'{CursorChar.to(y - 1, sort_pos)}{THEME.proc_box(Symbol.title_left)}{Fx.b}{THEME.hi_fg("<")} {THEME.title(CONFIG.proc_sorting)} '
 				f'{THEME.hi_fg(">")}{Fx.ub}{THEME.proc_box(Symbol.title_right)}')
 
 
 			if w > 29 + s_len:
 				if not "e" in key.mouse: key.mouse["e"] = [[sort_pos - 5 + i, y-1] for i in range(4)]
-				out_misc += (f'{Cursor.to(y - 1, sort_pos - 6)}{THEME.proc_box(Symbol.title_left)}{Fx.b if CONFIG.proc_tree else ""}'
+				out_misc += (f'{CursorChar.to(y - 1, sort_pos - 6)}{THEME.proc_box(Symbol.title_left)}{Fx.b if CONFIG.proc_tree else ""}'
 					f'{THEME.title("tre")}{THEME.hi_fg("e")}{Fx.ub}{THEME.proc_box(Symbol.title_right)}')
 			if w > 37 + s_len:
 				if not "r" in key.mouse: key.mouse["r"] = [[sort_pos - 14 + i, y-1] for i in range(7)]
-				out_misc += (f'{Cursor.to(y - 1, sort_pos - 15)}{THEME.proc_box(Symbol.title_left)}{Fx.b if CONFIG.proc_reversed else ""}'
+				out_misc += (f'{CursorChar.to(y - 1, sort_pos - 15)}{THEME.proc_box(Symbol.title_left)}{Fx.b if CONFIG.proc_reversed else ""}'
 					f'{THEME.hi_fg("r")}{THEME.title("everse")}{Fx.ub}{THEME.proc_box(Symbol.title_right)}')
 			if w > 47 + s_len:
 				if not "c" in key.mouse: key.mouse["c"] = [[sort_pos - 24 + i, y-1] for i in range(8)]
-				out_misc += (f'{Cursor.to(y - 1, sort_pos - 25)}{THEME.proc_box(Symbol.title_left)}{Fx.b if CONFIG.proc_per_core else ""}'
+				out_misc += (f'{CursorChar.to(y - 1, sort_pos - 25)}{THEME.proc_box(Symbol.title_left)}{Fx.b if CONFIG.proc_per_core else ""}'
 					f'{THEME.title("per-")}{THEME.hi_fg("c")}{THEME.title("ore")}{Fx.ub}{THEME.proc_box(Symbol.title_right)}')
 
 			if not "f" in key.mouse or cls.resized: key.mouse["f"] = [[x+5 + i, y-1] for i in range(6 if not proc.search_filter else 2 + len(proc.search_filter[-10:]))]
@@ -785,15 +784,15 @@ class ProcBox(Box):
 				if not "delete" in key.mouse: key.mouse["delete"] = [[x+11 + len(proc.search_filter[-10:]) + i, y-1] for i in range(3)]
 			elif "delete" in key.mouse:
 				del key.mouse["delete"]
-			out_misc += (f'{Cursor.to(y - 1, x + 7)}{THEME.proc_box(Symbol.title_left)}{Fx.b if cls.filtering or proc.search_filter else ""}{THEME.hi_fg("f")}{THEME.title}' +
+			out_misc += (f'{CursorChar.to(y - 1, x + 7)}{THEME.proc_box(Symbol.title_left)}{Fx.b if cls.filtering or proc.search_filter else ""}{THEME.hi_fg("f")}{THEME.title}' +
 						 ("ilter" if not proc.search_filter and not cls.filtering else f' {proc.search_filter[-(10 if w < 83 else w - 74):]}{(Fx.bl + "█" + Fx.ubl) if cls.filtering else THEME.hi_fg(" del")}') +
 				f'{THEME.proc_box(Symbol.title_right)}')
 
 			main = THEME.inactive_fg if cls.selected == 0 else THEME.main_fg
 			hi = THEME.inactive_fg if cls.selected == 0 else THEME.hi_fg
 			title = THEME.inactive_fg if cls.selected == 0 else THEME.title
-			out_misc += (f'{Cursor.to(y + h, x + 1)}{THEME.proc_box}{Symbol.h_line * (w - 4)}'
-					f'{Cursor.to(y + h, x + 1)}{THEME.proc_box(Symbol.title_left)}{main}{Symbol.up} {Fx.b}{THEME.main_fg("select")} {Fx.ub}'
+			out_misc += (f'{CursorChar.to(y + h, x + 1)}{THEME.proc_box}{Symbol.h_line * (w - 4)}'
+					f'{CursorChar.to(y + h, x + 1)}{THEME.proc_box(Symbol.title_left)}{main}{Symbol.up} {Fx.b}{THEME.main_fg("select")} {Fx.ub}'
 					f'{THEME.inactive_fg if cls.selected == cls.select_max else THEME.main_fg}{Symbol.down}{THEME.proc_box(Symbol.title_right)}'
 					f'{THEME.proc_box(Symbol.title_left)}{title}{Fx.b}info {Fx.ub}{main}{Symbol.enter}{THEME.proc_box(Symbol.title_right)}')
 			if not "enter" in key.mouse: key.mouse["enter"] = [[x + 14 + i, y+h] for i in range(6)]
@@ -816,11 +815,11 @@ class ProcBox(Box):
 			if selected == "memory": selected = "mem"
 			if selected == "threads" and not CONFIG.proc_tree and not arg_len: selected = "tr"
 			if CONFIG.proc_tree:
-				label = (f'{THEME.title}{Fx.b}{Cursor.to(y, x)}{" Tree:":<{tree_len - 2}}' + (f'{"Threads: ":<9}' if tr_show else " " * 4) + (f'{"User:":<9}' if usr_show else "") + f'Mem%{"Cpu%":>11}{Fx.ub}{THEME.main_fg} ' +
+				label = (f'{THEME.title}{Fx.b}{CursorChar.to(y, x)}{" Tree:":<{tree_len - 2}}' + (f'{"Threads: ":<9}' if tr_show else " " * 4) + (f'{"User:":<9}' if usr_show else "") + f'Mem%{"Cpu%":>11}{Fx.ub}{THEME.main_fg} ' +
 						 (" " if proc.num_procs > cls.select_max else ""))
 				if selected in ["pid", "program", "arguments"]: selected = "tree"
 			else:
-				label = (f'{THEME.title}{Fx.b}{Cursor.to(y, x)}{"Pid:":>7} {"Program:" if prog_len > 8 else "Prg:":<{prog_len}}' + (f'{"Arguments:":<{arg_len - 4}}' if arg_len else "") +
+				label = (f'{THEME.title}{Fx.b}{CursorChar.to(y, x)}{"Pid:":>7} {"Program:" if prog_len > 8 else "Prg:":<{prog_len}}' + (f'{"Arguments:":<{arg_len - 4}}' if arg_len else "") +
 						 ((f'{"Threads:":<9}' if arg_len else f'{"Tr:":^5}') if tr_show else "") + (f'{"User:":<9}' if usr_show else "") + f'Mem%{"Cpu%":>11}{Fx.ub}{THEME.main_fg} ' +
 						 (" " if proc.num_procs > cls.select_max else ""))
 				if selected == "program" and prog_len <= 8: selected = "prg"
@@ -839,28 +838,28 @@ class ProcBox(Box):
 			expand = proc.expand
 			iw = (dw - 3) // (4 + expand)
 			iw2 = iw - 1
-			out += (f'{Cursor.to(dy, dgx)}{Graphs.detailed_cpu(None if cls.moved or proc.details["killed"] else proc.details_cpu[-1])}'
-					f'{Cursor.to(dy, dgx)}{THEME.title}{Fx.b}{0 if proc.details["killed"] else proc.details["cpu_percent"]}%{Cursor.r(1)}{"" if SYSTEM == "MacOS" else (("C" if dgw < 20 else "Core") + str(proc.details["cpu_num"]))}')
+			out += (f'{CursorChar.to(dy, dgx)}{Graphs.detailed_cpu(None if cls.moved or proc.details["killed"] else proc.details_cpu[-1])}'
+					f'{CursorChar.to(dy, dgx)}{THEME.title}{Fx.b}{0 if proc.details["killed"] else proc.details["cpu_percent"]}%{CursorChar.r(1)}{"" if SYSTEM == "MacOS" else (("C" if dgw < 20 else "Core") + str(proc.details["cpu_num"]))}')
 			for i, l in enumerate(["C", "P", "U"]):
-				out += f'{Cursor.to(dy + 2 + i, dgx)}{l}'
+				out += f'{CursorChar.to(dy + 2 + i, dgx)}{l}'
 			for i, l in enumerate(["C", "M", "D"]):
-				out += f'{Cursor.to(dy + 4 + i, dx + 1)}{l}'
-			out += (f'{Cursor.to(dy, dx + 1)} {"Status:":^{iw}.{iw2}}{"Elapsed:":^{iw}.{iw2}}' +
+				out += f'{CursorChar.to(dy + 4 + i, dx + 1)}{l}'
+			out += (f'{CursorChar.to(dy, dx + 1)} {"Status:":^{iw}.{iw2}}{"Elapsed:":^{iw}.{iw2}}' +
 					(f'{"Parent:":^{iw}.{iw2}}' if dw > 28 else "") + (f'{"User:":^{iw}.{iw2}}' if dw > 38 else "") +
 					(f'{"Threads:":^{iw}.{iw2}}' if expand > 0 else "") + (f'{"Nice:":^{iw}.{iw2}}' if expand > 1 else "") +
 					(f'{"IO Read:":^{iw}.{iw2}}' if expand > 2 else "") + (f'{"IO Write:":^{iw}.{iw2}}' if expand > 3 else "") +
 					(f'{"TTY:":^{iw}.{iw2}}' if expand > 4 else "") +
-					f'{Cursor.to(dy + 1, dx + 1)}{Fx.ub}{THEME.main_fg}{stat_color}{proc.details["status"]:^{iw}.{iw2}}{Fx.ub}{THEME.main_fg}{proc.details["uptime"]:^{iw}.{iw2}} ' +
+					f'{CursorChar.to(dy + 1, dx + 1)}{Fx.ub}{THEME.main_fg}{stat_color}{proc.details["status"]:^{iw}.{iw2}}{Fx.ub}{THEME.main_fg}{proc.details["uptime"]:^{iw}.{iw2}} ' +
 					(f'{proc.details["parent_name"]:^{iw}.{iw2}}' if dw > 28 else "") + (f'{proc.details["username"]:^{iw}.{iw2}}' if dw > 38 else "") +
 					(f'{proc.details["threads"]:^{iw}.{iw2}}' if expand > 0 else "") + (f'{proc.details["nice"]:^{iw}.{iw2}}' if expand > 1 else "") +
 					(f'{proc.details["io_read"]:^{iw}.{iw2}}' if expand > 2 else "") + (f'{proc.details["io_write"]:^{iw}.{iw2}}' if expand > 3 else "") +
 					(f'{proc.details["terminal"][-(iw2):]:^{iw}.{iw2}}' if expand > 4 else "") +
-					f'{Cursor.to(dy + 3, dx)}{THEME.title}{Fx.b}{("Memory: " if dw > 42 else "M:") + str(round(proc.details["memory_percent"], 1)) + "%":>{dw // 3 - 1}}{Fx.ub} {THEME.inactive_fg}{"⡀" * (dw // 3)}'
-					f'{Cursor.l(dw // 3)}{THEME.proc_misc}{Graphs.detailed_mem(None if cls.moved else proc.details_mem[-1])} '
+					f'{CursorChar.to(dy + 3, dx)}{THEME.title}{Fx.b}{("Memory: " if dw > 42 else "M:") + str(round(proc.details["memory_percent"], 1)) + "%":>{dw // 3 - 1}}{Fx.ub} {THEME.inactive_fg}{"⡀" * (dw // 3)}'
+					f'{CursorChar.l(dw // 3)}{THEME.proc_misc}{Graphs.detailed_mem(None if cls.moved else proc.details_mem[-1])} '
 					f'{THEME.title}{Fx.b}{proc.details["memory_bytes"]:.{dw//3 - 2}}{THEME.main_fg}{Fx.ub}')
 			cy = dy + (4 if len(proc.details["cmdline"]) > dw - 5 else 5)
 			for i in range(ceil(len(proc.details["cmdline"]) / (dw - 5))):
-				out += f'{Cursor.to(cy + i, dx + 3)}{proc.details["cmdline"][((dw - 5) * i):][:(dw - 5)]:{"^" if i == 0 else "<"}{dw - 5}}'
+				out += f'{CursorChar.to(cy + i, dx + 3)}{proc.details["cmdline"][((dw - 5) * i):][:(dw - 5)]:{"^" if i == 0 else "<"}{dw - 5}}'
 				if i == 2: break
 
 		#* Checking for selection out of bounds
@@ -929,7 +928,7 @@ class ProcBox(Box):
 				out += f'{THEME.selected_bg}{THEME.selected_fg}{Fx.b}'
 
 			#* Creates one line for a process with all gathered information
-			out += (f'{Cursor.to(y + cy, x)}{g_color}{indent}{pid:>{(1 if CONFIG.proc_tree else 7)}} ' +
+			out += (f'{CursorChar.to(y + cy, x)}{g_color}{indent}{pid:>{(1 if CONFIG.proc_tree else 7)}} ' +
 				f'{c_color}{name:<{offset}.{offset}} {end}' +
 					(f'{g_color}{cmd:<{arg_len}.{arg_len-1}}' if arg_len else "") +
 					(t_color + (f'{threads:>4} ' if threads < 1000 else "999> ") + end if tr_show else "") +
@@ -940,15 +939,15 @@ class ProcBox(Box):
 
 			#* Draw small cpu graph for process if cpu usage was above 1% in the last 10 updates
 			if pid in Graphs.pid_cpu:
-				out += f'{Cursor.to(y + cy, x + w - (12 if proc.num_procs > cls.select_max else 11))}{c_color if CONFIG.proc_colors else THEME.proc_misc}{Graphs.pid_cpu[pid](None if cls.moved else round(cpu))}{THEME.main_fg}'
+				out += f'{CursorChar.to(y + cy, x + w - (12 if proc.num_procs > cls.select_max else 11))}{c_color if CONFIG.proc_colors else THEME.proc_misc}{Graphs.pid_cpu[pid](None if cls.moved else round(cpu))}{THEME.main_fg}'
 
-			if is_selected: out += f'{Fx.ub}{term.fg}{term.bg}{Cursor.to(y + cy, x + w - 1)}{" " if proc.num_procs > cls.select_max else ""}'
+			if is_selected: out += f'{Fx.ub}{term.fg}{term.bg}{CursorChar.to(y + cy, x + w - 1)}{" " if proc.num_procs > cls.select_max else ""}'
 
 			cy += 1
 			if cy == h: break
 		if cy < h:
 			for i in range(h-cy):
-				out += f'{Cursor.to(y + cy + i, x)}{" " * w}'
+				out += f'{CursorChar.to(y + cy + i, x)}{" " * w}'
 
 		#* Draw scrollbar if needed
 		if proc.num_procs > cls.select_max:
@@ -958,13 +957,13 @@ class ProcBox(Box):
 			scroll_pos = round(cls.start * (cls.select_max - 2) / (proc.num_procs - (cls.select_max - 2)))
 			if scroll_pos < 0 or cls.start == 1: scroll_pos = 0
 			elif scroll_pos > h - 3 or cls.start >= proc.num_procs - cls.select_max: scroll_pos = h - 3
-			out += (f'{Cursor.to(y, x + w - 1)}{Fx.b}{THEME.main_fg}↑{Cursor.to(y + h - 1, x + w - 1)}↓{Fx.ub}'
-					f'{Cursor.to(y + 1 + scroll_pos, x + w - 1)}█')
+			out += (f'{CursorChar.to(y, x + w - 1)}{Fx.b}{THEME.main_fg}↑{CursorChar.to(y + h - 1, x + w - 1)}↓{Fx.ub}'
+					f'{CursorChar.to(y + 1 + scroll_pos, x + w - 1)}█')
 		elif "scroll_up" in key.mouse:
 			del key.mouse["scroll_up"], key.mouse["scroll_down"]
 
 		#* Draw current selection and number of processes
-		out += (f'{Cursor.to(y + h, x + w - 3 - len(loc_string))}{THEME.proc_box}{Symbol.title_left}{THEME.title}'
+		out += (f'{CursorChar.to(y + h, x + w - 3 - len(loc_string))}{THEME.proc_box}{Symbol.title_left}{THEME.title}'
 					f'{Fx.b}{loc_string}{Fx.ub}{THEME.proc_box(Symbol.title_right)}')
 
 		#* Clean up dead processes graphs and counters
