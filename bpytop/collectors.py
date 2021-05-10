@@ -327,7 +327,7 @@ class CpuCollector(Collector):
 		CpuBox._draw_fg()
 
 
-class Memcollector(collector):
+class MemCollector(collector):
 	'''Collects memory and disks information'''
 	values: Dict[str, int] = {}
 	vlist: Dict[str, List[int]] = {}
@@ -515,7 +515,7 @@ class Memcollector(collector):
 		MemBox._draw_fg()
 
 
-class Netcollector(collector):
+class NetCollector(collector):
 	'''Collects network stats'''
 	buffer: str = NetBox.buffer
 	nics: List[str] = []
@@ -566,7 +566,7 @@ class Netcollector(collector):
 		elif cls.nic_i < 0: cls.nic_i = len(cls.nics) - 1
 		cls.new_nic = cls.nics[cls.nic_i]
 		cls.switched = True
-		collector.collect(Netcollector, redraw=True)
+		collector.collect(NetCollector, redraw=True)
 
 	@classmethod
 	def _collect(cls):
@@ -668,7 +668,7 @@ class Netcollector(collector):
 		NetBox._draw_fg()
 
 
-class Proccollector(collector):
+class ProcCollector(collector):
 	'''Collects process stats'''
 	buffer: str = ProcBox.buffer
 	search_filter: str = ""
@@ -970,7 +970,7 @@ class Proccollector(collector):
 		elif index < 0: index = len(CONFIG.sorting_options) - 1
 		CONFIG.proc_sorting = CONFIG.sorting_options[index]
 		if "left" in key.mouse: del key.mouse["left"]
-		collector.collect(Proccollector, interrupt=True, redraw=True)
+		collector.collect(ProcCollector, interrupt=True, redraw=True)
 
 	@classmethod
 	def _draw(cls):

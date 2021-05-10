@@ -1,35 +1,8 @@
-from typing import Dict, Tuple
 
-MENUS: Dict[str, Dict[str, Tuple[str, ...]]] = {
-	"options" : {
-		"normal" : (
-			"┌─┐┌─┐┌┬┐┬┌─┐┌┐┌┌─┐",
-			"│ │├─┘ │ ││ ││││└─┐",
-			"└─┘┴   ┴ ┴└─┘┘└┘└─┘"),
-		"selected" : (
-			"╔═╗╔═╗╔╦╗╦╔═╗╔╗╔╔═╗",
-			"║ ║╠═╝ ║ ║║ ║║║║╚═╗",
-			"╚═╝╩   ╩ ╩╚═╝╝╚╝╚═╝") },
-	"help" : {
-		"normal" : (
-			"┬ ┬┌─┐┬  ┌─┐",
-			"├─┤├┤ │  ├─┘",
-			"┴ ┴└─┘┴─┘┴  "),
-		"selected" : (
-			"╦ ╦╔═╗╦  ╔═╗",
-			"╠═╣║╣ ║  ╠═╝",
-			"╩ ╩╚═╝╩═╝╩  ") },
-	"quit" : {
-		"normal" : (
-			"┌─┐ ┬ ┬ ┬┌┬┐",
-			"│─┼┐│ │ │ │ ",
-			"└─┘└└─┘ ┴ ┴ "),
-		"selected" : (
-			"╔═╗ ╦ ╦ ╦╔╦╗ ",
-			"║═╬╗║ ║ ║ ║  ",
-			"╚═╝╚╚═╝ ╩ ╩  ") }
-}
-MENU_COLORS: Dict[str, Tuple[str, ...]] = {
-	"normal" : ("#0fd7ff", "#00bfe6", "#00a6c7", "#008ca8"),
-	"selected" : ("#ffa50a", "#f09800", "#db8b00", "#c27b00")
-}
+
+class BpytopUI:  # from (UI) ?
+
+	def __init__(self):
+		pass
+
+

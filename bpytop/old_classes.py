@@ -21,14 +21,13 @@ from time import sleep
 from typing import Dict, List, Union
 
 from bpytop.bpytop_widgets import NetBox
-from bpytop.collectors import Cpucollector, Netcollector, Proccollector
+from bpytop.collectors import Cpucollector, NetCollector, ProcCollector
 from bpytop.old import BANNER_SRC
-from bpytop.theme import Theme
+from bpytop.theme import MENUS, MENU_COLORS, Theme
 from bpytop2 import (
 	THEME,
 	VERSION, errlog,
 )
-from bpytop.ui import MENUS, MENU_COLORS
 from bpytop.old_functions import (
 	clean_quit,
 )
@@ -845,11 +844,11 @@ class Menu:
 									CONFIG.tree_depth = 0
 								else:
 									CONFIG.tree_depth = int(input_val)
-								Proccollector.collapsed = {}
+								ProcCollector.collapsed = {}
 							elif isinstance(getattr(CONFIG, selected), str):
 								setattr(CONFIG, selected, input_val)
 								if selected.startswith("net_"):
-									Netcollector.net_min = {"download" : -1, "upload" : -1}
+									NetCollector.net_min = {"download" : -1, "upload" : -1}
 								elif selected == "draw_clock":
 									Box.clock_on = True if len(CONFIG.draw_clock) > 0 else False
 									if not Box.clock_on: Draw.clear("clock", saved=True)
@@ -879,10 +878,10 @@ class Menu:
 					Box.draw_update_ms()
 				elif key == "left" and selected == "tree_depth" and CONFIG.tree_depth > 0:
 					CONFIG.tree_depth -= 1
-					Proccollector.collapsed = {}
+					ProcCollector.collapsed = {}
 				elif key == "right" and selected == "tree_depth":
 					CONFIG.tree_depth += 1
-					Proccollector.collapsed = {}
+					ProcCollector.collapsed = {}
 				elif key in ["left", "right"] and isinstance(getattr(CONFIG, selected), bool):
 					setattr(CONFIG, selected, not getattr(CONFIG, selected))
 					if selected == "check_temp":
@@ -892,7 +891,7 @@ class Menu:
 							Cpucollector.sensor_method = ""
 							Cpucollector.got_sensors = False
 					if selected in ["net_auto", "net_color_fixed", "net_sync"]:
-						if selected == "net_auto": Netcollector.auto_min = CONFIG.net_auto
+						if selected == "net_auto": NetCollector.auto_min = CONFIG.net_auto
 						NetBox.redraw = True
 					if selected == "theme_background":
 						term.bg = THEME.main_bg if CONFIG.theme_background else "\033[49m"
@@ -914,7 +913,7 @@ class Menu:
 					term.refresh(force=True)
 					timer.finish()
 				elif key in ["left", "right"] and selected == "proc_sorting":
-					Proccollector.sorting(key)
+					ProcCollector.sorting(key)
 				elif key in ["left", "right"] and selected == "log_level":
 					if key == "left":
 						loglevel_i -= 1

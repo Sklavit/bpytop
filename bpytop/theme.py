@@ -1,9 +1,13 @@
+import logging
+
 import os
 
 from typing import Dict, List, Tuple
 
-from bpytop2 import errlog
 from engine.universe.terminal.colors import Color, Colors
+
+reporter = logging.getLogger("reporter")
+errlog = logging.getLogger("ErrorLogger")
 
 DEFAULT_THEME: Dict[str, str] = {
 	"main_bg" : "",
@@ -165,3 +169,38 @@ class Theme:
 			errlog.exception(str(e))
 
 		return new_theme
+
+
+MENUS: Dict[str, Dict[str, Tuple[str, ...]]] = {
+	"options" : {
+		"normal" : (
+			"┌─┐┌─┐┌┬┐┬┌─┐┌┐┌┌─┐",
+			"│ │├─┘ │ ││ ││││└─┐",
+			"└─┘┴   ┴ ┴└─┘┘└┘└─┘"),
+		"selected" : (
+			"╔═╗╔═╗╔╦╗╦╔═╗╔╗╔╔═╗",
+			"║ ║╠═╝ ║ ║║ ║║║║╚═╗",
+			"╚═╝╩   ╩ ╩╚═╝╝╚╝╚═╝") },
+	"help" : {
+		"normal" : (
+			"┬ ┬┌─┐┬  ┌─┐",
+			"├─┤├┤ │  ├─┘",
+			"┴ ┴└─┘┴─┘┴  "),
+		"selected" : (
+			"╦ ╦╔═╗╦  ╔═╗",
+			"╠═╣║╣ ║  ╠═╝",
+			"╩ ╩╚═╝╩═╝╩  ") },
+	"quit" : {
+		"normal" : (
+			"┌─┐ ┬ ┬ ┬┌┬┐",
+			"│─┼┐│ │ │ │ ",
+			"└─┘└└─┘ ┴ ┴ "),
+		"selected" : (
+			"╔═╗ ╦ ╦ ╦╔╦╗ ",
+			"║═╬╗║ ║ ║ ║  ",
+			"╚═╝╚╚═╝ ╩ ╩  ") }
+}
+MENU_COLORS: Dict[str, Tuple[str, ...]] = {
+	"normal" : ("#0fd7ff", "#00bfe6", "#00a6c7", "#008ca8"),
+	"selected" : ("#ffa50a", "#f09800", "#db8b00", "#c27b00")
+}

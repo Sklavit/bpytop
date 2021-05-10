@@ -7,7 +7,7 @@ from typing import Dict, List, Tuple, Union
 from bpytop.old_classes import (
 	Graph, Graphs, Menu, Meters,
 )
-from bpytop.collectors import Cpucollector, Memcollector, Netcollector, Proccollector
+from bpytop.collectors import CpuCollector, MemCollector, NetCollector, ProcCollector
 from bpytop.old_functions import floating_humanizer, min_max, readfile
 from engine.universe.terminal.terminal_engine import CursorChar, Draw, create_box
 from engine.universe.terminal.terminal_widgets import Box, Fx, Meter, SubBox, Symbol
@@ -35,7 +35,7 @@ class CpuBox(Box, SubBox):
 
 	@classmethod
 	def _calc_size(cls):
-		cpu = Cpucollector
+		cpu = CpuCollector
 		height_p: int
 		if cls.proc_mode: height_p = 20
 		else: height_p = cls.height_p
@@ -309,7 +309,7 @@ class MemBox(Box):
 	@classmethod
 	def _draw_fg(cls):
 		if cls.proc_mode: return
-		mem = Memcollector
+		mem = MemCollector
 		if mem.redraw: cls.redraw = True
 		out: str = ""
 		out_misc: str = ""
@@ -469,7 +469,7 @@ class NetBox(Box, SubBox):
 	@classmethod
 	def _draw_fg(cls):
 		if cls.proc_mode: return
-		net = Netcollector
+		net = NetCollector
 		if net.redraw: cls.redraw = True
 		if not net.nic: return
 		out: str = ""
@@ -591,35 +591,35 @@ class ProcBox(Box):
 			elif cls.selected > 1:
 				cls.selected -= 1
 		elif key == "down":
-			if cls.selected == 0 and Proccollector.detailed and cls.last_selection:
+			if cls.selected == 0 and ProcCollector.detailed and cls.last_selection:
 				cls.selected = cls.last_selection
 				cls.last_selection = 0
-			if cls.selected == cls.select_max and cls.start < Proccollector.num_procs - cls.select_max + 1:
+			if cls.selected == cls.select_max and cls.start < ProcCollector.num_procs - cls.select_max + 1:
 				cls.start += 1
 			elif cls.selected < cls.select_max:
 				cls.selected += 1
 		elif key == "mouse_scroll_up" and cls.start > 1:
 			cls.start -= 5
-		elif key == "mouse_scroll_down" and cls.start < Proccollector.num_procs - cls.select_max + 1:
+		elif key == "mouse_scroll_down" and cls.start < ProcCollector.num_procs - cls.select_max + 1:
 			cls.start += 5
 		elif key == "page_up" and cls.start > 1:
 			cls.start -= cls.select_max
-		elif key == "page_down" and cls.start < Proccollector.num_procs - cls.select_max + 1:
+		elif key == "page_down" and cls.start < ProcCollector.num_procs - cls.select_max + 1:
 			cls.start += cls.select_max
 		elif key == "home":
 			if cls.start > 1: cls.start = 1
 			elif cls.selected > 0: cls.selected = 0
 		elif key == "end":
-			if cls.start < Proccollector.num_procs - cls.select_max + 1: cls.start = Proccollector.num_procs - cls.select_max + 1
+			if cls.start < ProcCollector.num_procs - cls.select_max + 1: cls.start = ProcCollector.num_procs - cls.select_max + 1
 			elif cls.selected < cls.select_max: cls.selected = cls.select_max
 		elif key == "mouse_click":
 			if mouse_pos[0] > cls.x + cls.width - 4 and mouse_pos[1] > cls.current_y + 1 and mouse_pos[1] < cls.current_y + 1 + cls.select_max + 1:
 				if mouse_pos[1] == cls.current_y + 2:
 					cls.start = 1
 				elif mouse_pos[1] == cls.current_y + 1 + cls.select_max:
-					cls.start = Proccollector.num_procs - cls.select_max + 1
+					cls.start = ProcCollector.num_procs - cls.select_max + 1
 				else:
-					cls.start = round((mouse_pos[1] - cls.current_y) * ((Proccollector.num_procs - cls.select_max - 2) / (cls.select_max - 2)))
+					cls.start = round((mouse_pos[1] - cls.current_y) * ((ProcCollector.num_procs - cls.select_max - 2) / (cls.select_max - 2)))
 			else:
 				new_sel = mouse_pos[1] - cls.current_y - 1 if mouse_pos[1] >= cls.current_y - 1 else 0
 				if new_sel > 0 and new_sel == cls.selected:
@@ -631,22 +631,22 @@ class ProcBox(Box):
 		elif key == "mouse_unselect":
 			cls.selected = 0
 
-		if cls.start > Proccollector.num_procs - cls.select_max + 1 and Proccollector.num_procs > cls.select_max: cls.start = Proccollector.num_procs - cls.select_max + 1
-		elif cls.start > Proccollector.num_procs: cls.start = Proccollector.num_procs
+		if cls.start > ProcCollector.num_procs - cls.select_max + 1 and ProcCollector.num_procs > cls.select_max: cls.start = ProcCollector.num_procs - cls.select_max + 1
+		elif cls.start > ProcCollector.num_procs: cls.start = ProcCollector.num_procs
 		if cls.start < 1: cls.start = 1
-		if cls.selected > Proccollector.num_procs and Proccollector.num_procs < cls.select_max: cls.selected = Proccollector.num_procs
+		if cls.selected > ProcCollector.num_procs and ProcCollector.num_procs < cls.select_max: cls.selected = ProcCollector.num_procs
 		elif cls.selected > cls.select_max: cls.selected = cls.select_max
 		if cls.selected < 0: cls.selected = 0
 
 		if old != (cls.start, cls.selected):
 			cls.moved = True
-			collector.collect(Proccollector, proc_interrupt=True, redraw=True, only_draw=True)
+			collector.collect(ProcCollector, proc_interrupt=True, redraw=True, only_draw=True)
 
 
 	@classmethod
 	def _draw_fg(cls):
 		if cls.stat_mode: return
-		proc = Proccollector
+		proc = ProcCollector
 		if proc.proc_interrupt: return
 		if proc.redraw: cls.redraw = True
 		out: str = ""

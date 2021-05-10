@@ -228,10 +228,10 @@ class Config:
 		self.conf: Dict[str, Union[str, int, bool]] = self.load_config()
 		if not "version" in self.conf.keys():
 			self.recreate = True
-			self.info.append(f'self.config file malformatted or missing, will be recreated on exit!')
+			self.info.append(f'Config file malformatted or missing, will be recreated on exit!')
 		elif self.conf["version"] != VERSION:
 			self.recreate = True
-			self.info.append(f'self.config file version and bpytop version missmatch, will be recreated on exit!')
+			self.info.append(f'Config file version and bpytop version missmatch, will be recreated on exit!')
 		for key in self.keys:
 			if key in self.conf.keys() and self.conf[key] != "_error_":
 				setattr(self, key, self.conf[key])
@@ -245,7 +245,7 @@ class Config:
 			object.__setattr__(self, "changed", True)
 		object.__setattr__(self, name, value)
 		if name not in ["_initialized", "recreate", "changed"]:
-			self.self.conf_dict[name] = value
+			self.conf_dict[name] = value
 
 	def load_config(self) -> Dict[str, Union[str, int, bool]]:
 		'''Load config from file, set correct types for values and return a dict'''
@@ -261,7 +261,7 @@ class Config:
 			with open(self.conf_file, "r") as f:
 				for line in f:
 					line = line.strip()
-					if line.startswith("#? self.config"):
+					if line.startswith("#? Config"):
 						new_config["version"] = line[line.find("v. ") + 3:]
 					for key in self.keys:
 						if line.startswith(key):
@@ -272,34 +272,34 @@ class Config:
 								try:
 									new_config[key] = int(line)
 								except ValueError:
-									self.warnings.append(f'self.config key "{key}" should be an integer!')
+									self.warnings.append(f'Config key "{key}" should be an integer!')
 							if type(getattr(self, key)) == bool:
 								try:
 									new_config[key] = bool(strtobool(line))
 								except ValueError:
-									self.warnings.append(f'self.config key "{key}" can only be True or False!')
+									self.warnings.append(f'Config key "{key}" can only be True or False!')
 							if type(getattr(self, key)) == str:
 									new_config[key] = str(line)
 		except Exception as e:
 			errlog.exception(str(e))
 		if "proc_sorting" in new_config and not new_config["proc_sorting"] in self.sorting_options:
 			new_config["proc_sorting"] = "_error_"
-			self.warnings.append(f'self.config key "proc_sorted" didn\'t get an acceptable value!')
+			self.warnings.append(f'Config key "proc_sorted" didn\'t get an acceptable value!')
 		if "log_level" in new_config and not new_config["log_level"] in self.log_levels:
 			new_config["log_level"] = "_error_"
-			self.warnings.append(f'self.config key "log_level" didn\'t get an acceptable value!')
+			self.warnings.append(f'Config key "log_level" didn\'t get an acceptable value!')
 		if "view_mode" in new_config and not new_config["view_mode"] in self.view_modes:
 			new_config["view_mode"] = "_error_"
-			self.warnings.append(f'self.config key "view_mode" didn\'t get an acceptable value!')
+			self.warnings.append(f'Config key "view_mode" didn\'t get an acceptable value!')
 		if isinstance(new_config["update_ms"], int) and new_config["update_ms"] < 100:
 			new_config["update_ms"] = 100
-			self.warnings.append(f'self.config key "update_ms" can\'t be lower than 100!')
+			self.warnings.append(f'Config key "update_ms" can\'t be lower than 100!')
 		for net_name in ["net_download", "net_upload"]:
 			if net_name in new_config and not new_config[net_name][0].isdigit(): # type: ignore
 				new_config[net_name] = "_error_"
 		if "cpu_sensor" in new_config and not new_config["cpu_sensor"] in self.cpu_sensors:
 			new_config["cpu_sensor"] = "_error_"
-			self.warnings.append(f'self.config key "cpu_sensor" does not contain an available sensor!')
+			self.warnings.append(f'Config key "cpu_sensor" does not contain an available sensor!')
 		return new_config
 
 	def save_config(self):
