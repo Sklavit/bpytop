@@ -40,7 +40,9 @@ from bpytop.config import *
 # 	now_sleeping,
 # 	quit_sigint,
 # )
+from bpytop.debug_utils import TimeIt
 from bpytop.env import *
+from bpytop.old_classes import Init
 from bpytop.theme import Theme
 from bpytop.old_functions import get_cpu_name
 from engine.universe.terminal.terminal_engine import Draw
@@ -170,9 +172,11 @@ def main():
 	if config.update_check:
 		UpdateChecker.run()
 
+	init_screen_widget = Init()
+
 	# ? Draw banner and init status
 	if config.show_init and not Init.resized:
-		Init.start()
+		init_screen_widget.start()
 
 	# ? Load theme
 	if config.show_init:
@@ -190,9 +194,9 @@ def main():
 		Draw.now(THEME.main_fg, THEME.main_bg)
 
 	except Exception as e:
-		Init.fail(e)
+		init_screen_widget.fail(e)
 	else:
-		Init.success()
+		init_screen_widget.success()
 
 	# ? Setup boxes
 	if config.show_init:
@@ -206,9 +210,9 @@ def main():
 		Box.calc_sizes()
 		Box.draw_bg(now=False)
 	except Exception as e:
-		Init.fail(e)
+		init_screen_widget.fail(e)
 	else:
-		Init.success()
+		init_screen_widget.success()
 
 	# ? Setup signal handlers for SIGSTP, SIGCONT, SIGINT and SIGWINCH
 	if config.show_init:
@@ -222,9 +226,9 @@ def main():
 		signal.signal(signal.SIGINT, quit_sigint)  # * Ctrl-C
 		signal.signal(signal.SIGWINCH, terminal.refresh)  # * terminal resized
 	except Exception as e:
-		Init.fail(e)
+		init_screen_widget.fail(e)
 	else:
-		Init.success()
+		init_screen_widget.success()
 
 	# ? Start a separate thread for reading keyboard input
 	if config.show_init:
@@ -235,9 +239,9 @@ def main():
 	try:
 		controller.start()
 	except Exception as e:
-		Init.fail(e)
+		init_screen_widget.fail(e)
 	else:
-		Init.success()
+		init_screen_widget.success()
 
 	# ? Start a separate thread for data collection and drawing
 	if config.show_init:
@@ -248,9 +252,9 @@ def main():
 	try:
 		collector.start()
 	except Exception as e:
-		Init.fail(e)
+		init_screen_widget.fail(e)
 	else:
-		Init.success()
+		init_screen_widget.success()
 
 	# ? Collect data and draw to buffer
 	if config.show_init:
@@ -262,9 +266,9 @@ def main():
 		collector.collect(draw_now=False)
 		pass
 	except Exception as e:
-		Init.fail(e)
+		init_screen_widget.fail(e)
 	else:
-		Init.success()
+		init_screen_widget.success()
 
 	# ? Draw to screen
 	if config.show_init:
@@ -272,11 +276,11 @@ def main():
 	try:
 		collector.collect_done.wait()
 	except Exception as e:
-		Init.fail(e)
+		init_screen_widget.fail(e)
 	else:
-		Init.success()
+		init_screen_widget.success()
 
-	Init.done()
+	init_screen_widget.done()
 	terminal.refresh()
 	Draw.out(clear=True)
 	if CONFIG.draw_clock:

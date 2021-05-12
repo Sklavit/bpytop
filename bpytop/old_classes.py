@@ -32,6 +32,7 @@ from bpytop.old_functions import (
 	clean_quit,
 )
 from engine.universe.terminal.terminal_engine import create_box
+from engine.universe.terminal.terminal_widgets import Fx
 
 
 class Raw(object):
@@ -79,16 +80,19 @@ class Banner:
 		for n, o in enumerate(cls.out):
 			out += f'{Cursor.to(line + n, col)}{o}'
 		out += f'{term.fg}'
-		if now: Draw.out(out)
-		else: return out
+		if now:
+			Draw.out(out)
+		else:
+			return out
 
 
 class Graph:
-	'''Class for creating and adding to graphs
+	"""
+	Class for creating and adding to graphs
 	* __str__ : returns graph as a string
 	* add(value: int) : adds a value to graph and returns it as a string
 	* __call__ : same as add
-	'''
+	"""
 	out: str
 	width: int
 	height: int
@@ -193,7 +197,8 @@ class Graph:
 		if self.colors: self.out += f'{term.fg}'
 
 	def __call__(self, value: Union[int, None] = None) -> str:
-		if not isinstance(value, int): return self.out
+		if not isinstance(value, int):
+			return self.out
 		self.current = not self.current
 		if self.height == 1:
 			if self.graphs[self.current][0].startswith(self.symbol[0.0]):
@@ -1024,7 +1029,11 @@ class UpdateChecker:
 					errlog.exception(f'{e}')
 
 
-class Init:
+class FullScreenWidget:
+	pass
+
+
+class Init(FullScreenWidget):
 	running: bool = True
 	initbg_colors: List[str] = []
 	initbg_data: List[int]
@@ -1038,8 +1047,10 @@ class Init:
 		Draw.buffer("initbg", z=10)
 		for i in range(51):
 			for _ in range(2): cls.initbg_colors.append(Color.fg(i, i, i))
-		Draw.buffer("banner", (f'{Banner.draw(term.height // 2 - 10, center=True)}{Cursor.d(1)}{Cursor.l(11)}{Colors.black_bg}{Colors.default}'
-				f'{Fx.b}{Fx.i}Version: {VERSION}{Fx.ui}{Fx.ub}{term.bg}{term.fg}{Color.fg("#50")}'), z=2)
+		Draw.buffer("banner", (
+			f'{Banner.draw(term.height // 2 - 10, center=True)}{Cursor.d(1)}{Cursor.l(11)}{Colors.black_bg}{Colors.default}'
+			f'{Fx.b}{Fx.i}Version: {VERSION}{Fx.ui}{Fx.ub}{term.bg}{term.fg}{Color.fg("#50")}'
+		), z=2)
 		for _i in range(7):
 			perc = f'{str(round((_i + 1) * 14 + 2)) + "%":>5}'
 			Draw.buffer("+banner", f'{Cursor.to(term.height // 2 - 2 + _i, term.width // 2 - 28)}{Fx.trans(perc)}{Symbol.v_line}')
@@ -1076,11 +1087,17 @@ class Init:
 	@classmethod
 	def done(cls):
 		cls.running = False
-		if not CONFIG.show_init: return
+		if not CONFIG.show_init:
+			return
 		if cls.resized:
 			Draw.now(term.clear)
 		else:
 			cls.draw_bg(10)
 		Draw.clear("initbg", "banner", "init", saved=True)
-		if cls.resized: return
-		del cls.initbg_up, cls.initbg_down, cls.initbg_data, cls.initbg_colors
+		if cls.resized:
+			return
+
+		del cls.initbg_up
+		del cls.initbg_down
+		del cls.initbg_data
+		del cls.initbg_colors

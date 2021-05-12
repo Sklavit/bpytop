@@ -1,11 +1,12 @@
-
-
 #? Timers for testing and debugging -------------------------------------------------------------->
+import logging
+
 from typing import Dict
 
 from time import time
 
-from bpytop2 import errlog
+reporter = logging.getLogger("reporter")
+errlog = logging.getLogger("ErrorLogger")
 
 
 def timeit_decorator(func):

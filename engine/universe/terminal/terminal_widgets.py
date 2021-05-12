@@ -78,9 +78,11 @@ class Meter:
 
 
 class Fx:
-	"""Text effects
+	"""
+	Text effects
 	* trans(string: str): Replace whitespace with escape move right to not overwrite background behind whitespace.
-	* uncolor(string: str) : Removes all 24-bit color and returns string ."""
+	* uncolor(string: str) : Removes all 24-bit color and returns string .
+	"""
 	start					= "\033["			#* Escape sequence start
 	sep						= ";"				#* Escape sequence separator
 	end						= "m"				#* Escape sequence end
