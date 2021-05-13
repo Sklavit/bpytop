@@ -31,8 +31,9 @@ from bpytop2 import (
 from bpytop.old_functions import (
 	clean_quit,
 )
-from engine.universe.terminal.terminal_engine import create_box
-from engine.universe.terminal.terminal_widgets import Fx
+from engine.universe.terminal.colors import Color
+from engine.universe.terminal.terminal_engine import CursorChar, Draw, create_box
+from engine.universe.terminal.terminal_widgets import Fx, Symbol
 
 
 class Raw(object):
@@ -65,7 +66,7 @@ class Banner:
 					else: c_color = line_color
 					out_var += c_color
 				elif letter == " ":
-					letter = f'{Cursor.r(1)}'
+					letter = f'{CursorChar.r(1)}'
 					c_color = ""
 				elif letter != "█" and c_color != line_dark:
 					c_color = line_dark
@@ -78,7 +79,7 @@ class Banner:
 		out: str = ""
 		if center: col = term.width // 2 - cls.length // 2
 		for n, o in enumerate(cls.out):
-			out += f'{Cursor.to(line + n, col)}{o}'
+			out += f'{CursorChar.to(line + n, col)}{o}'
 		out += f'{term.fg}'
 		if now:
 			Draw.out(out)
@@ -173,9 +174,13 @@ class Graph:
 			h_high = round(100 * (self.height - h) / self.height) if self.height > 1 else 100
 			h_low = round(100 * (self.height - (h + 1)) / self.height) if self.height > 1 else 0
 			for v in range(len(data)):
-				if new: self.current = bool(v % 2) #* Switch between True and False graphs
-				if new and v == 0: self.last = 0
-				for val, side in [self.last, "left"], [data[v], "right"]: # type: ignore
+				if new:
+					# * Switch between True and False graphs
+					self.current = bool(v % 2)
+				if new and v == 0:
+					self.last = 0
+				for val, side in [self.last, "left"], [data[v], "right"]:
+					# type: ignore
 					if val >= h_high:
 						value[side] = 4
 					elif val <= h_low:
@@ -183,18 +188,21 @@ class Graph:
 					else:
 						if self.height == 1: value[side] = round(val * 4 / 100 + 0.5)
 						else: value[side] = round((val - h_low) * 4 / (h_high - h_low) + 0.1)
-				if new: self.last = data[v]
+				if new:
+					self.last = data[v]
 				self.graphs[self.current][h] += self.symbol[float(value["left"] + value["right"] / 10)]
-		if data: self.last = data[-1]
+		if data:
+			self.last = data[-1]
 		self.out = ""
 
 		if self.height == 1:
 			self.out += f'{"" if not self.colors else self.colors[self.last]}{self.graphs[self.current][0]}'
 		elif self.height > 1:
 			for h in range(self.height):
-				if h > 0: self.out += f'{Cursor.d(1)}{Cursor.l(self.width)}'
+				if h > 0: self.out += f'{CursorChar.d(1)}{CursorChar.l(self.width)}'
 				self.out += f'{"" if not self.colors else self.colors[h]}{self.graphs[self.current][h if not self.invert else (self.height - 1) - h]}'
-		if self.colors: self.out += f'{term.fg}'
+		if self.colors:
+			self.out += f'{term.fg}'
 
 	def __call__(self, value: Union[int, None] = None) -> str:
 		if not isinstance(value, int):
@@ -257,7 +265,7 @@ class Menu:
 			menus[name][sel] = ""
 			for i in range(len(menu[sel])):
 				menus[name][sel] += Fx.trans(f'{Color.fg(MENU_COLORS[sel][i])}{menu[sel][i]}')
-				if i < len(menu[sel]) - 1: menus[name][sel] += f'{Cursor.d(1)}{Cursor.l(len(menu[sel][i]))}'
+				if i < len(menu[sel]) - 1: menus[name][sel] += f'{CursorChar.d(1)}{CursorChar.l(len(menu[sel][i]))}'
 
 	@classmethod
 	def main(cls):
@@ -280,10 +288,10 @@ class Menu:
 		while not cls.close:
 			key = ""
 			if cls.resized:
-				banner = (f'{Banner.draw(term.height // 2 - 10, center=True)}{Cursor.d(1)}{Cursor.l(46)}{Colors.black_bg}{Colors.default}{Fx.b}← esc'
-					f'{Cursor.r(30)}{Fx.i}Version: {VERSION}{Fx.ui}{Fx.ub}{term.bg}{term.fg}')
+				banner = (f'{Banner.draw(term.height // 2 - 10, center=True)}{CursorChar.d(1)}{CursorChar.l(46)}{Colors.black_bg}{Colors.default}{Fx.b}← esc'
+					f'{CursorChar.r(30)}{Fx.i}Version: {VERSION}{Fx.ui}{Fx.ub}{term.bg}{term.fg}')
 				if UpdateChecker.version != VERSION:
-					banner += f'{Cursor.to(term.height, 1)}{Fx.b}{THEME.title}New release {UpdateChecker.version} available at https://github.com/aristocratos/bpytop{Fx.ub}{term.fg}'
+					banner += f'{CursorChar.to(term.height, 1)}{Fx.b}{THEME.title}New release {UpdateChecker.version} available at https://github.com/aristocratos/bpytop{Fx.ub}{term.fg}'
 				cy = 0
 				for name, menu in cls.menus.items():
 					ypos = term.height // 2 - 2 + cy
@@ -296,7 +304,7 @@ class Menu:
 			if redraw:
 				out = ""
 				for name, menu in cls.menus.items():
-					out += f'{Cursor.to(mouse_items[name]["y1"], mouse_items[name]["x1"])}{menu["selected" if name == menu_current else "normal"]}'
+					out += f'{CursorChar.to(mouse_items[name]["y1"], mouse_items[name]["x1"])}{menu["selected" if name == menu_current else "normal"]}'
 
 			if skip and redraw:
 				Draw.now(out)
@@ -412,8 +420,8 @@ class Menu:
 			key = ""
 			if cls.resized:
 				y = 8 if term.height < len(help_items) + 10 else term.height // 2 - len(help_items) // 2 + 4
-				out_misc = (f'{Banner.draw(y-7, center=True)}{Cursor.d(1)}{Cursor.l(46)}{Colors.black_bg}{Colors.default}{Fx.b}← esc'
-					f'{Cursor.r(30)}{Fx.i}Version: {VERSION}{Fx.ui}{Fx.ub}{term.bg}{term.fg}')
+				out_misc = (f'{Banner.draw(y-7, center=True)}{CursorChar.d(1)}{CursorChar.l(46)}{Colors.black_bg}{Colors.default}{Fx.b}← esc'
+					f'{CursorChar.r(30)}{Fx.i}Version: {VERSION}{Fx.ui}{Fx.ub}{term.bg}{term.fg}')
 				x = term.width//2-36
 				h, w = term.height-2-y, 72
 				if len(help_items) > h:
@@ -430,17 +438,17 @@ class Menu:
 				out = ""
 				cy = 0
 				if pages:
-					out += (f'{Cursor.to(y, x + 56)}{THEME.div_line(Symbol.title_left)}{Fx.b}{THEME.title("pg")}{Fx.ub}{THEME.main_fg(Symbol.up)} {Fx.b}{THEME.title}{page}/{pages} '
+					out += (f'{CursorChar.to(y, x + 56)}{THEME.div_line(Symbol.title_left)}{Fx.b}{THEME.title("pg")}{Fx.ub}{THEME.main_fg(Symbol.up)} {Fx.b}{THEME.title}{page}/{pages} '
 					f'pg{Fx.ub}{THEME.main_fg(Symbol.down)}{THEME.div_line(Symbol.title_right)}')
-				out += f'{Cursor.to(y + 1, x + 1)}{THEME.title}{Fx.b}{"Keys:":^20}Description:{THEME.main_fg}'
+				out += f'{CursorChar.to(y + 1, x + 1)}{THEME.title}{Fx.b}{"Keys:":^20}Description:{THEME.main_fg}'
 				for n, (keys, desc) in enumerate(help_items.items()):
 					if pages and n < (page - 1) * h: continue
-					out += f'{Cursor.to(y + 2 + cy, x + 1)}{Fx.b}{("" if keys.startswith("_") else keys):^20.20}{Fx.ub}{desc:50.50}'
+					out += f'{CursorChar.to(y + 2 + cy, x + 1)}{Fx.b}{("" if keys.startswith("_") else keys):^20.20}{Fx.ub}{desc:50.50}'
 					cy += 1
 					if cy == h: break
 				if cy < h:
 					for i in range(h-cy):
-						out += f'{Cursor.to(y + 2 + cy + i, x + 1)}{" " * (w - 2)}'
+						out += f'{CursorChar.to(y + 2 + cy + i, x + 1)}{" " * (w - 2)}'
 
 			if skip and redraw:
 				Draw.now(out)
@@ -730,8 +738,8 @@ class Menu:
 			key = ""
 			if cls.resized:
 				y = 9 if term.height < option_len + 10 else term.height // 2 - option_len // 2 + 4
-				out_misc = (f'{Banner.draw(y-7, center=True)}{Cursor.d(1)}{Cursor.l(46)}{Colors.black_bg}{Colors.default}{Fx.b}← esc'
-					f'{Cursor.r(30)}{Fx.i}Version: {VERSION}{Fx.ui}{Fx.ub}{term.bg}{term.fg}')
+				out_misc = (f'{Banner.draw(y-7, center=True)}{CursorChar.d(1)}{CursorChar.l(46)}{Colors.black_bg}{Colors.default}{Fx.b}← esc'
+					f'{CursorChar.r(30)}{Fx.i}Version: {VERSION}{Fx.ui}{Fx.ub}{term.bg}{term.fg}')
 				x = term.width//2-38
 				x2 = x + 27
 				h, w, w2 = term.height-2-y, 26, 50
@@ -754,7 +762,7 @@ class Menu:
 
 				selected = list(option_items)[selected_int]
 				if pages:
-					out += (f'{Cursor.to(y + h + 1, x + 11)}{THEME.div_line(Symbol.title_left)}{Fx.b}{THEME.title("pg")}{Fx.ub}{THEME.main_fg(Symbol.up)} {Fx.b}{THEME.title}{page}/{pages} '
+					out += (f'{CursorChar.to(y + h + 1, x + 11)}{THEME.div_line(Symbol.title_left)}{Fx.b}{THEME.title("pg")}{Fx.ub}{THEME.main_fg(Symbol.up)} {Fx.b}{THEME.title}{page}/{pages} '
 					f'pg{Fx.ub}{THEME.main_fg(Symbol.down)}{THEME.div_line(Symbol.title_right)}')
 				#out += f'{Mv.to(y+1, x+1)}{THEME.title}{Fx.b}{"Keys:":^20}Description:{THEME.main_fg}'
 				for n, opt in enumerate(option_items):
@@ -775,7 +783,7 @@ class Menu:
 						counter = f' {cpu_sensor_i + 1}/{len(CONFIG.cpu_sensors)}'
 					else:
 						counter = ""
-					out += f'{Cursor.to(y + 1 + cy, x + 1)}{t_color}{Fx.b}{opt.replace("_", " ").capitalize() + counter:^24.24}{Fx.ub}{Cursor.to(y + 2 + cy, x + 1)}{v_color}'
+					out += f'{CursorChar.to(y + 1 + cy, x + 1)}{t_color}{Fx.b}{opt.replace("_", " ").capitalize() + counter:^24.24}{Fx.ub}{CursorChar.to(y + 2 + cy, x + 1)}{v_color}'
 					if opt == selected:
 						if isinstance(value, bool) or opt in ["color_theme", "proc_sorting", "log_level", "view_mode", "cpu_sensor"]:
 							out += f'{t_color} {Symbol.left}{v_color}{d_quote + str(value) + d_quote:^20.20}{t_color}{Symbol.right} '
@@ -793,12 +801,12 @@ class Menu:
 						if y2 + h2 > term.height: y2 = term.height - h2
 						out += f'{create_box(x2, y2, w2, h2, "description", line_color=THEME.div_line)}{THEME.main_fg}'
 						for n, desc in enumerate(option_items[opt]):
-							out += f'{Cursor.to(y2 + 1 + n, x2 + 2)}{desc:.48}'
+							out += f'{CursorChar.to(y2 + 1 + n, x2 + 2)}{desc:.48}'
 					cy += 2
 					if cy >= h: break
 				if cy < h:
 					for i in range(h-cy):
-						out += f'{Cursor.to(y + 1 + cy + i, x + 1)}{" " * (w - 2)}'
+						out += f'{CursorChar.to(y + 1 + cy + i, x + 1)}{" " * (w - 2)}'
 
 
 			if not skip or redraw:
@@ -856,7 +864,8 @@ class Menu:
 									NetCollector.net_min = {"download" : -1, "upload" : -1}
 								elif selected == "draw_clock":
 									Box.clock_on = True if len(CONFIG.draw_clock) > 0 else False
-									if not Box.clock_on: Draw.clear("clock", saved=True)
+									if not Box.clock_on:
+										Draw.clear("clock", saved=True)
 							term.refresh(force=True)
 							cls.resized = False
 					elif key == "backspace" and len(input_val) > 0:
@@ -1034,70 +1043,80 @@ class FullScreenWidget:
 
 
 class Init(FullScreenWidget):
-	running: bool = True
-	initbg_colors: List[str] = []
-	initbg_data: List[int]
-	initbg_up: Graph
-	initbg_down: Graph
-	resized = False
+	def __init__(self):
+		self.running: bool = True
+		self.initbg_colors: List[str] = []
+		self.initbg_data: List[int]
+		self.initbg_up: Graph
+		self.initbg_down: Graph
+		self.resized = False
+		self.is_showing = False
 
-	@classmethod
-	def start(cls):
 		Draw.buffer("init", z=1)
 		Draw.buffer("initbg", z=10)
 		for i in range(51):
-			for _ in range(2): cls.initbg_colors.append(Color.fg(i, i, i))
+			for _ in range(2): self.initbg_colors.append(Color.fg(i, i, i))
 		Draw.buffer("banner", (
-			f'{Banner.draw(term.height // 2 - 10, center=True)}{Cursor.d(1)}{Cursor.l(11)}{Colors.black_bg}{Colors.default}'
+			f'{Banner.draw(term.height // 2 - 10, center=True)}{CursorChar.d(1)}{CursorChar.l(11)}{Colors.black_bg}{Colors.default}'
 			f'{Fx.b}{Fx.i}Version: {VERSION}{Fx.ui}{Fx.ub}{term.bg}{term.fg}{Color.fg("#50")}'
 		), z=2)
 		for _i in range(7):
 			perc = f'{str(round((_i + 1) * 14 + 2)) + "%":>5}'
-			Draw.buffer("+banner", f'{Cursor.to(term.height // 2 - 2 + _i, term.width // 2 - 28)}{Fx.trans(perc)}{Symbol.v_line}')
+			Draw.buffer("+banner", f'{CursorChar.to(term.height // 2 - 2 + _i, term.width // 2 - 28)}{Fx.trans(perc)}{Symbol.v_line}')
 
-		Draw.out("banner")
-		Draw.buffer("+init!", f'{Color.fg("#cc")}{Fx.b}{Cursor.to(term.height // 2 - 2, term.width // 2 - 21)}{Cursor.save}')
+		Draw.buffer("+init!", f'{Color.fg("#cc")}{Fx.b}{CursorChar.to(term.height // 2 - 2, term.width // 2 - 21)}{CursorChar.save}')
 
-		cls.initbg_data = [randint(0, 100) for _ in range(term.width * 2)]
-		cls.initbg_up = Graph(term.width, term.height // 2, cls.initbg_colors, cls.initbg_data, invert=True)
-		cls.initbg_down = Graph(term.width, term.height // 2, cls.initbg_colors, cls.initbg_data, invert=False)
+		self.initbg_data = [randint(0, 100) for _ in range(term.width * 2)]
+		self.initbg_up = Graph(term.width, term.height // 2, self.initbg_colors, self.initbg_data, invert=True)
+		self.initbg_down = Graph(term.width, term.height // 2, self.initbg_colors, self.initbg_data, invert=False)
 
-	@classmethod
-	def success(cls):
-		if not CONFIG.show_init or cls.resized: return
-		cls.draw_bg(5)
-		Draw.buffer("+init!", f'{Cursor.restore}{Symbol.ok}\n{Cursor.r(term.width // 2 - 22)}{Cursor.save}')
+	def show(self):
+		self.is_showing = True
+		if not self.resized:
+			# prevent showing during resizing
+			Draw.out("banner")
 
-	@staticmethod
-	def fail(err):
-		if CONFIG.show_init:
-			Draw.buffer("+init!", f'{Cursor.restore}{Symbol.fail}')
-			sleep(2)
-		errlog.exception(f'{err}')
-		clean_quit(1, errmsg=f'Error during init! See {CONFIG_DIR}/error.log for more information.')
-
-	@classmethod
-	def draw_bg(cls, times: int = 5):
+	def draw_bg(self, times: int = 5):
 		for _ in range(times):
 			sleep(0.05)
 			x = randint(0, 100)
-			Draw.buffer("initbg", f'{Fx.ub}{Cursor.to(0, 0)}{cls.initbg_up(x)}{Cursor.to(term.height // 2, 0)}{cls.initbg_down(x)}')
-			Draw.out("initbg", "banner", "init")
+			Draw.buffer(
+				"initbg",
+				f'{Fx.ub}{CursorChar.to(0, 0)}{self.initbg_up(x)}{CursorChar.to(term.height // 2, 0)}{self.initbg_down(x)}'
+			)
+			if self.is_showing and not self.resized:
+				Draw.out("initbg", "banner", "init")
 
-	@classmethod
-	def done(cls):
-		cls.running = False
-		if not CONFIG.show_init:
+	def done(self):
+		self.running = False
+		if not self.is_showing:
 			return
-		if cls.resized:
-			Draw.now(term.clear)
+
+		if self.resized:
+			Draw.now(terminal.clear)
 		else:
-			cls.draw_bg(10)
+			self.draw_bg(10)
 		Draw.clear("initbg", "banner", "init", saved=True)
-		if cls.resized:
+		if self.resized:
 			return
 
-		del cls.initbg_up
-		del cls.initbg_down
-		del cls.initbg_data
-		del cls.initbg_colors
+		# memory cleanup TODO what for?
+		del self.initbg_up
+		del self.initbg_down
+		del self.initbg_data
+		del self.initbg_colors
+
+	def add_line(self, line_text: str):
+		"""
+		Adds text label and shows it.
+
+		:param str line_text: text to show in label.
+		"""
+		Draw.buffer(
+			"+init",
+			f'{CursorChar.restore}{Fx.trans(line_text)}{CursorChar.save}',
+		)
+		if self.is_showing and not self.resized:
+			# prevent showing during resizing
+			Draw.out("init")
+

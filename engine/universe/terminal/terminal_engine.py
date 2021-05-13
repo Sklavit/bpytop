@@ -90,21 +90,26 @@ class Draw:
 			now = True
 		cls.save[name] = not no_save
 		cls.once[name] = once
-		if not name in cls.z_order or z != 100: cls.z_order[name] = z
-		if args: string = "".join(args)
+		if not name in cls.z_order or z != 100:
+			cls.z_order[name] = z
+		if args:
+			string = "".join(args)
 		if only_save:
-			if name not in cls.saved or not append: cls.saved[name] = ""
+			if name not in cls.saved or not append:
+				cls.saved[name] = ""
 			cls.saved[name] += string
 		else:
-			if name not in cls.strings or not append: cls.strings[name] = ""
+			if name not in cls.strings or not append:
+				cls.strings[name] = ""
 			cls.strings[name] += string
 			if now:
 				cls.out(name)
 
 	@classmethod
-	def out(cls, *names: str, clear = False):
+	def out(cls, *names: str, clear=False):
 		out: str = ""
-		if not cls.strings: return
+		if not cls.strings:
+			return
 		if names:
 			for name in sorted(cls.z_order, key=cls.z_order.get, reverse=True):
 				if name in names and name in cls.strings:

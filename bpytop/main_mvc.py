@@ -10,10 +10,9 @@ import threading
 from time import sleep
 from typing import Dict, List, Tuple, Union
 
+from bpytop.event_loop import Timer
 from bpytop.old_classes import Init, Menu
-from bpytop.terminal_widgets import Box, Fx
 from bpytop.bpytop_widgets import CpuBox
-from bpytop.terminal_engine import Colors, Cursor, Draw
 from bpytop.old_functions import (
 	clean_quit,
 )
@@ -264,22 +263,29 @@ class Terminal:
 
 	def refresh(self, *args, force: bool = False):
 		"""Update width, height and set resized flag if terminal has been resized"""
-		if self.resized: self.winch.set(); return
+		if self.resized:
+			self.winch.set()
+			return
+
 		self._w, self._h = os.get_terminal_size()
-		if (self._w, self._h) == (self.width, self.height) and not force: return
-		if force: collector.collect_interrupt = True
+		if (self._w, self._h) == (self.width, self.height) and not force:
+			return
+
+		if force:
+			collector.collect_interrupt = True
 		while (self._w, self._h) != (self.width, self.height) or (self._w < 80 or self._h < 24):
-			if Init.running: Init.resized = True
+			if Init.running:
+				Init.resized = True
 			CpuBox.clock_block = True
 			self.resized = True
 			collector.collect_interrupt = True
 			self.width, self.height = self._w, self._h
-			Draw.now(term.clear)
+			Draw.now(terminal.clear)
 			Draw.now(f'{create_box(self._w // 2 - 25, self._h // 2 - 2, 50, 3, "resizing", line_color=Colors.green, title_color=Colors.white)}',
 				f'{Cursor.r(12)}{Colors.default}{Colors.black_bg}{Fx.b}Width : {self._w}   Height: {self._h}{Fx.ub}{term.bg}{term.fg}')
 			if self._w < 80 or self._h < 24:
 				while self._w < 80 or self._h < 24:
-					Draw.now(term.clear)
+					Draw.now(terminal.clear)
 					Draw.now(f'{create_box(self._w // 2 - 25, self._h // 2 - 2, 50, 4, "warning", line_color=Colors.red, title_color=Colors.white)}',
 						f'{Cursor.r(12)}{Colors.default}{Colors.black_bg}{Fx.b}Width: {Colors.red if self._w < 80 else Colors.green}{self._w}   ',
 						f'{Colors.default}Height: {Colors.red if self._h < 24 else Colors.green}{self._h}{term.bg}{term.fg}',
@@ -292,13 +298,18 @@ class Terminal:
 				self.winch.clear()
 			self._w, self._h = os.get_terminal_size()
 
-		key.mouse = {}
+		controller.mouse = {}
 		Box.calc_sizes()
-		if Init.running: self.resized = False; return
-		if Menu.active: Menu.resized = True
+		if Init.running:
+			self.resized = False
+			return
+
+		if Menu.active:
+			Menu.resized = True
+
 		Box.draw_bg(now=False)
 		self.resized = False
-		timer.finish()
+		Timer.finish()
 
 	@staticmethod
 	def echo(on: bool):
@@ -314,8 +325,10 @@ class Terminal:
 	@staticmethod
 	def title(text: str = "") -> str:
 		out: str = f'{os.environ.get("TERMINAL_TITLE", "")}'
-		if out and text: out += " "
-		if text: out += f'{text}'
+		if out and text:
+			out += " "
+		if text:
+			out += f'{text}'
 		return f'\033]0;{out}\a'
 
 

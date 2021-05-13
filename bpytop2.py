@@ -18,6 +18,10 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
+from symtable import Symbol
+from time import sleep
+
+import signal
 
 import argparse
 # import signal
@@ -42,10 +46,11 @@ from bpytop.config import *
 # )
 from bpytop.debug_utils import TimeIt
 from bpytop.env import *
+from bpytop.main_mvc import MainWidget
 from bpytop.old_classes import Init
 from bpytop.theme import Theme
-from bpytop.old_functions import get_cpu_name
-from engine.universe.terminal.terminal_engine import Draw
+from bpytop.old_functions import clean_quit, get_cpu_name
+from engine.universe.terminal.terminal_engine import CursorChar, Draw
 
 if errors:
 	print ("ERROR!")
@@ -150,6 +155,29 @@ def report(
 	reporter.info(message)
 
 
+class SuccessFailureHandler:
+	"""Simple success-failure context manager."""
+	def __init__(self, success, fail):
+		self.success = success
+		self.fail = fail
+
+	def __enter__(self):
+		pass
+
+	def __exit__(self, type, value, traceback):
+		if value:
+			Init.add_line(f'{CursorChar.restore}{Symbol.fail}')
+			sleep(2)
+			errlog.exception(f'{value}')
+			clean_quit(
+				1,
+				errmsg=f'Error during init! See {CONFIG_DIR}/error.log for more information.'
+			)
+		else:
+			Init.draw_bg(5)
+			Init.add_line(f'{Symbol.ok}\n{CursorChar.r(terminal.width // 2 - 22)}')
+
+
 def main():
 	setup_logger()
 
@@ -175,16 +203,14 @@ def main():
 	init_screen_widget = Init()
 
 	# ? Draw banner and init status
-	if config.show_init and not Init.resized:
-		init_screen_widget.start()
+	if config.show_init and not init_screen_widget.resized:
+		init_screen_widget.show()
 
 	# ? Load theme
 	if config.show_init:
-		Draw.buffer(
-			"+init!",
-			f'{Mv.restore}{Fx.trans("Loading theme and creating colors... ")}{Mv.save}',
-		)
-	try:
+		init_screen_widget.add_line("Loading theme and creating colors... ")
+
+	with SuccessFailureHandler(init_screen_widget.success, init_screen_widget.fail):
 		THEME = Theme(config.color_theme)
 		config.color_theme = THEME.current
 
@@ -193,104 +219,68 @@ def main():
 		term.bg = THEME.main_bg if config.theme_background else "\033[49m"
 		Draw.now(THEME.main_fg, THEME.main_bg)
 
-	except Exception as e:
-		init_screen_widget.fail(e)
-	else:
-		init_screen_widget.success()
-
 	# ? Setup boxes
 	if config.show_init:
-		Draw.buffer(
-			"+init!",
-			f'{Mv.restore}{Fx.trans("Doing some maths and drawing... ")}{Mv.save}',
-		)
-	try:
+		init_screen_widget.add_line("Doing some maths and drawing... ")
+
+	with SuccessFailureHandler(init_screen_widget.success, init_screen_widget.fail):
 		if config.check_temp:
-			Cpucollector.get_sensors()
+			CpuCollector.get_sensors()
 		Box.calc_sizes()
 		Box.draw_bg(now=False)
-	except Exception as e:
-		init_screen_widget.fail(e)
-	else:
-		init_screen_widget.success()
 
 	# ? Setup signal handlers for SIGSTP, SIGCONT, SIGINT and SIGWINCH
 	if config.show_init:
-		Draw.buffer(
-			"+init!",
-			f'{Mv.restore}{Fx.trans("Setting up signal handlers... ")}{Mv.save}',
-		)
-	try:
+		init_screen_widget.add_line("Setting up signal handlers... ")
+
+	with SuccessFailureHandler(init_screen_widget.success, init_screen_widget.fail):
 		signal.signal(signal.SIGTSTP, now_sleeping)  # * Ctrl-Z
 		signal.signal(signal.SIGCONT, now_awake)  # * Resume
 		signal.signal(signal.SIGINT, quit_sigint)  # * Ctrl-C
 		signal.signal(signal.SIGWINCH, terminal.refresh)  # * terminal resized
-	except Exception as e:
-		init_screen_widget.fail(e)
-	else:
-		init_screen_widget.success()
 
 	# ? Start a separate thread for reading keyboard input
 	if config.show_init:
-		Draw.buffer(
-			"+init!",
-			f'{Mv.restore}{Fx.trans("Starting input reader thread... ")}{Mv.save}',
-		)
-	try:
+		init_screen_widget.add_line("Starting input reader thread... ")
+
+	with SuccessFailureHandler(init_screen_widget.success, init_screen_widget.fail):
 		controller.start()
-	except Exception as e:
-		init_screen_widget.fail(e)
-	else:
-		init_screen_widget.success()
 
 	# ? Start a separate thread for data collection and drawing
 	if config.show_init:
-		Draw.buffer(
-			"+init!",
-			f'{Mv.restore}{Fx.trans("Starting data collection and drawer thread... ")}{Mv.save}',
-		)
-	try:
+		init_screen_widget.add_line("Starting data collection and drawer thread... ")
+
+	with SuccessFailureHandler(init_screen_widget.success, init_screen_widget.fail):
 		collector.start()
-	except Exception as e:
-		init_screen_widget.fail(e)
-	else:
-		init_screen_widget.success()
 
 	# ? Collect data and draw to buffer
 	if config.show_init:
-		Draw.buffer(
-			"+init!",
-			f'{Mv.restore}{Fx.trans("Collecting data and drawing... ")}{Mv.save}',
-		)
-	try:
+		init_screen_widget.add_line("Collecting data and drawing... ")
+
+	with SuccessFailureHandler(init_screen_widget.success, init_screen_widget.fail):
 		collector.collect(draw_now=False)
-		pass
-	except Exception as e:
-		init_screen_widget.fail(e)
-	else:
-		init_screen_widget.success()
 
 	# ? Draw to screen
 	if config.show_init:
-		Draw.buffer("+init!", f'{Mv.restore}{Fx.trans("Finishing up... ")}{Mv.save}')
-	try:
+		init_screen_widget.add_line("Finishing up... ")
+
+	with SuccessFailureHandler(init_screen_widget.success, init_screen_widget.fail):
 		collector.collect_done.wait()
-	except Exception as e:
-		init_screen_widget.fail(e)
-	else:
-		init_screen_widget.success()
 
 	init_screen_widget.done()
-	terminal.refresh()
+
+	main_widget.terminal.refresh()
 	Draw.out(clear=True)
-	if CONFIG.draw_clock:
+
+	if config.draw_clock:
 		Box.clock_on = True
+
 	if DEBUG:
 		TimeIt.stop("Init")
 
 	# ? Start main loop
 	try:
-		run_event_loop(terminal, timer, controller, collector)
+		run_event_loop(main_widget.terminal, timer, controller, collector)
 	except Exception as e:
 		errlog.exception(f"{e}")
 		clean_quit(1)
@@ -300,7 +290,7 @@ def main():
 
 
 if __name__ == "__main__":
-	# ? Argument parser ------------------------------------------------------------------------------->
+	# ? Argument parser --------------------------------------------------------------------------->
 	args = argparse.ArgumentParser()
 	args.add_argument(
 		"-f",
