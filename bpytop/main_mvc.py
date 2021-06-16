@@ -48,9 +48,9 @@ class MainWidget:
 
 
 class Controller:
-	"""Handles the threaded input reader for keypresses and mouse events"""
+	"""Handles the threaded input reader for keypresses and mouse events."""
 	def __init__(self):
-		self.list: List[str] = []
+		self.events_queue: List[str] = []
 		self.mouse: Dict[str, List[List[int]]] = {}
 		self.mouse_pos: Tuple[int, int] = (0, 0)
 		self.escape: Dict[Union[str, Tuple[str, str]], str] = {
@@ -81,14 +81,15 @@ class Controller:
 			"[23" :					"f11",
 			"[24" :					"f12"
 		}
-		self.new = threading.Event()
-		self.idle = threading.Event()
+		self.new_event = threading.Event()
+		self.idle_event = threading.Event()
+		self.idle_event.set()
+
 		self.mouse_move = threading.Event()
 		self.mouse_report: bool = False
-		self.idle.set()
 		self.stopping: bool = False
 		self.started: bool = False
-		self.reader: threading.Thread
+		self.reader: threading.Thread = None
 
 	def start(self):
 		self.stopping = False
@@ -104,17 +105,12 @@ class Controller:
 			except:
 				pass
 
-	def last(self) -> str:
-		if self.list: return self.list.pop()
-		else: return ""
-
 	def get(self) -> str:
-		if self.list: return self.list.pop(0)
-		else: return ""
+		return self.events_queue.pop(0) if self.events_queue else ""
 
 	def get_mouse(self) -> Tuple[int, int]:
-		if self.new.is_set():
-			self.new.clear()
+		if self.new_event.is_set():
+			self.new_event.clear()
 		return self.mouse_pos
 
 	def mouse_moved(self) -> bool:
@@ -125,33 +121,44 @@ class Controller:
 			return False
 
 	def has_key(self) -> bool:
-		if self.list: return True
-		else: return False
+		return bool(self.events_queue)
 
 	def clear(self):
-		self.list = []
+		self.events_queue = []
 
-	def input_wait(self, sec: float = 0.0, mouse: bool = False) -> bool:
-		'''Returns True if key is detected else waits out timer and returns False'''
-		if self.list: return True
-		if mouse: Draw.now(term.mouse_direct_on)
-		self.new.wait(sec if sec > 0 else 0.0)
-		if mouse: Draw.now(term.mouse_direct_off, term.mouse_on)
+	def input_wait(self, timeout: float = 0.0, mouse: bool = False) -> bool:
+		"""Returns True if key or mouse is detected else waits out timer and returns False.
 
-		if self.new.is_set():
-			self.new.clear()
+		:param timeout: When the timeout argument is present and not None,
+			it should be a floating point number
+			specifying a timeout for the operation in seconds (or fractions thereof).
+
+		"""
+		if self.events_queue:
+			return True
+		if mouse:
+			Draw.now(term.mouse_direct_on)
+
+		self.new_event.wait(timeout if timeout > 0 else 0.0)
+
+		if mouse:
+			Draw.now(term.mouse_direct_off, term.mouse_on)
+
+		if self.new_event.is_set():
+			self.new_event.clear()
 			return True
 		else:
 			return False
 
 	def break_wait(self):
-		self.list.append("_null")
-		self.new.set()
+		self.events_queue.append("_null")
+		self.new_event.set()
 		sleep(0.01)
-		self.new.clear()
+		self.new_event.clear()
 
 	def _get_key(self):
-		"""Get a key or escape sequence from stdin, convert to readable format and save to keys list. Meant to be run in it's own thread."""
+		"""Get a key or escape sequence from stdin, convert to readable format and save to keys
+		list. Meant to be run in it's own thread. """
 		input_key: str = ""
 		try:
 			while not self.stopping:
@@ -162,7 +169,7 @@ class Controller:
 					input_key += sys.stdin.read(1)  # * Read 1 key safely with blocking on
 					if input_key == ESCAPE_CODE:  # * If first character is a escape sequence keep reading
 						# * Report IO block in progress to prevent Draw functions from getting a IO Block error
-						self.idle.clear()
+						self.idle_event.clear()
 						# * Wait for Draw function to finish if busy
 						Draw.idle.wait()
 						# * Set non blocking to prevent read stall
@@ -170,7 +177,7 @@ class Controller:
 							input_key += sys.stdin.read(20)
 							if input_key.startswith("\033[<"):
 								_ = sys.stdin.read(1000)
-						self.idle.set()  # * Report IO blocking done
+						self.idle_event.set()  # * Report IO blocking done
 
 					# errlog.debug(f'{repr(input_key)}')
 
@@ -178,19 +185,18 @@ class Controller:
 
 					if clean_key:
 						# * Store up to 10 keys in input queue for later processing
-						self.list.append(clean_key)
-						if len(self.list) > 10:
-							del self.list[0]
+						self.events_queue.append(clean_key)
+						if len(self.events_queue) > 10:
+							del self.events_queue[0]
 
 						# * Set threading event to interrupt main thread sleep
-						self.new.set()
+						self.new_event.set()
 					input_key = ""
-
 
 		except Exception as e:
 			errlog.exception(f'Input thread failed with exception: {e}')
-			self.idle.set()
-			self.list.clear()
+			self.idle_event.set()
+			self.events_queue.clear()
 			clean_quit(1, thread=True)
 
 	def parse_input_key(self, input_key):
@@ -209,7 +215,7 @@ class Controller:
 				if input_key.startswith(
 					"\033[<35;"):  # * Detected mouse move in mouse direct mode
 					self.mouse_move.set()
-					self.new.set()
+					self.new_event.set()
 				elif input_key.startswith("\033[<64;"):  # * Detected mouse scroll up
 					clean_key = "mouse_scroll_up"
 				elif input_key.startswith("\033[<65;"):  # * Detected mouse scroll down
@@ -310,6 +316,7 @@ class Terminal:
 		Box.draw_bg(now=False)
 		self.resized = False
 		Timer.finish()
+		self.controller.break_wait()
 
 	@staticmethod
 	def echo(on: bool):

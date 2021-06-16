@@ -25,7 +25,7 @@ from bpytop.env import SYSTEM
 # from bpytop.terminal_engine import Color, Cursor, Draw
 # from bpytop2 import CONFIG, THEME, errlog
 # from bpytop.old_consts import UNITS
-
+from bpytop.main_mvc import Controller
 
 THREAD_ERROR: int = 0
 
@@ -86,10 +86,13 @@ def now_sleeping(signum, frame):
 
 
 def now_awake(signum, frame):
-	"""Set terminal settings and restart background input read"""
+	"""Set terminal settings and restart background input read.
+
+	Used on STOP interruption signal.
+	"""
 	Draw.now(term.alt_screen, term.clear, term.hide_cursor, term.mouse_on, term.title("BpyTOP"))
 	term.echo(False)
-	key.start()
+	controller.start()
 	term.refresh()
 	Box.calc_sizes()
 	Box.draw_bg()
@@ -109,7 +112,7 @@ def clean_quit(errcode: int = 0, errmsg: str = "", thread: bool = False):
 		interrupt_main()
 		return
 	if THREAD_ERROR: errcode = THREAD_ERROR
-	key.stop()
+	controller.stop()
 	collector.stop()
 	if not errcode: CONFIG.save_config()
 	Draw.now(term.clear, term.normal_screen, term.show_cursor, term.mouse_off, term.mouse_direct_off, term.title())
@@ -219,14 +222,15 @@ def readfile(file: str, default: str = "") -> str:
 	return default if out is None else out
 
 
-def process_keys():
+def process_keys(controller: Controller):
 	mouse_pos: Tuple[int, int] = (0, 0)
 	filtered: bool = False
 	global ARG_MODE
-	while key.has_key():
-		key = key.get()
+
+	while controller.has_key():
+		key = controller.get()
 		if key in ["mouse_scroll_up", "mouse_scroll_down", "mouse_click"]:
-			mouse_pos = key.get_mouse()
+			mouse_pos = controller.get_mouse()
 			if mouse_pos[0] >= ProcBox.x and mouse_pos[1] >= ProcBox.current_y + 1 and mouse_pos[1] < ProcBox.current_y + ProcBox.current_h - 1:
 				pass
 			elif key == "mouse_click":

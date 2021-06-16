@@ -312,9 +312,9 @@ class Menu:
 				Draw.now(f'{cls.background}{banner}{out}')
 			skip = redraw = False
 
-			if key.input_wait(timer.left(), mouse=True):
-				if key.mouse_moved():
-					mx, my = key.get_mouse()
+			if controller.input_wait(timer.left(), mouse=True):
+				if controller.mouse_moved():
+					mx, my = controller.get_mouse()
 					for name, pos in mouse_items.items():
 						if mx >= pos["x1"] and mx <= pos["x2"] and my >= pos["y1"] and my <= pos["y2"]:
 							mouse_over = True
@@ -326,7 +326,7 @@ class Menu:
 					else:
 						mouse_over = False
 				else:
-					key = key.get()
+					key = controller.get()
 
 				if key == "mouse_click" and not mouse_over:
 					key = "M"
@@ -926,6 +926,7 @@ class Menu:
 					THEME(CONFIG.color_theme)
 					term.refresh(force=True)
 					timer.finish()
+					self.controller.break_wait()
 				elif key in ["left", "right"] and selected == "proc_sorting":
 					ProcCollector.sorting(key)
 				elif key in ["left", "right"] and selected == "log_level":

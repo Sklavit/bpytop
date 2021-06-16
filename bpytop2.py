@@ -46,10 +46,14 @@ from bpytop.config import *
 # )
 from bpytop.debug_utils import TimeIt
 from bpytop.env import *
+from bpytop.event_loop import Timer, run_event_loop
 from bpytop.main_mvc import MainWidget
 from bpytop.old_classes import Init
 from bpytop.theme import Theme
-from bpytop.old_functions import clean_quit, get_cpu_name
+from bpytop.old_functions import (
+	clean_quit, get_cpu_name, now_awake, now_sleeping, process_keys,
+	quit_sigint,
+)
 from engine.universe.terminal.terminal_engine import CursorChar, Draw
 
 if errors:
@@ -178,17 +182,7 @@ class SuccessFailureHandler:
 			Init.add_line(f'{Symbol.ok}\n{CursorChar.r(terminal.width // 2 - 22)}')
 
 
-def main():
-	setup_logger()
-
-	config = Config(CONFIG_FILE, DEBUG)
-
-	controller = Controller()
-	timer = Timer(update_ms=config.update_ms, controller=controller)
-	collector = Collector()
-
-	global THEME
-
+def init_application(config):
 	# ? Init -------------------------------------------------------------------------------------->
 	if DEBUG:
 		TimeIt.start("Init")
@@ -272,15 +266,38 @@ def main():
 	main_widget.terminal.refresh()
 	Draw.out(clear=True)
 
+
+def main():
+	setup_logger()
+
+	config = Config(CONFIG_FILE, DEBUG)
+
+	controller = Controller()
+	timer = Timer(update_ms=config.update_ms)
+	collector = Collector()
+
+	global THEME
+
+	init_application(config)
+
 	if config.draw_clock:
 		Box.clock_on = True
 
 	if DEBUG:
 		TimeIt.stop("Init")
 
-	# ? Start main loop
+	# Start main application event loop
 	try:
-		run_event_loop(main_widget.terminal, timer, controller, collector)
+		while not False:
+			main_widget.terminal.refresh()
+			timer.stamp()
+
+			while timer.not_zero():
+				if controller.input_wait(timer.left()):
+					process_keys(controller)
+
+			collector.collect()
+			# TODO should be some drawing of results here
 	except Exception as e:
 		errlog.exception(f"{e}")
 		clean_quit(1)
