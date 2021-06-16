@@ -16,21 +16,7 @@ from bpytop2 import errlog
 ESCAPE_CODE = "\033"
 
 
-class MainWidget:
-    def __init__(self):
-        pass
 
-    def init(self):
-        Draw.now(
-            self.terminal.alt_screen,  # Switch to alternate screen
-            self.terminal.clear,  # clear screen, reset cursor
-            self.terminal.hide_cursor,  # hide cursor
-            self.terminal.mouse_on,  # enable mouse reporting
-            self.terminal.title("BpyTOP"),
-        )
-        # disable input echo
-        self.terminal.echo(False)
-        self.terminal.refresh(force=True)
 
 
 class Controller:

@@ -19,6 +19,8 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 from symtable import Symbol
+import threading
+
 from time import sleep
 
 import signal
@@ -27,6 +29,7 @@ import argparse
 # import signal
 #
 # from bpytop.collectors import Collector
+from bpytop.collectors import Collector
 from bpytop.config import *
 # from bpytop.config import VERSION, errlog
 # from bpytop.debug_utils import TimeIt
@@ -47,18 +50,18 @@ from bpytop.config import *
 from bpytop.debug_utils import TimeIt
 from bpytop.env import *
 from bpytop.event_loop import Timer
-from bpytop.main_mvc import MainWidget
-from bpytop.old_classes import Init
+from bpytop.main_mvc import Controller
+from bpytop.old_classes import Init, checker_for_latest_version
 from bpytop.theme import Theme
 from bpytop.old_functions import (
 	clean_quit, get_cpu_name, now_awake, now_sleeping, process_keys,
 	quit_sigint,
 )
-from engine.universe.terminal.terminal_engine import Draw
+from bpytop.tools import ThreadWithReturnValue
 from engine.universe.terminal.constants import CursorChar
 
 from engine.universe import Universe
-
+from engine.universe.terminal.terminal_widgets import Box
 
 if errors:
 	print ("ERROR!")
@@ -186,18 +189,13 @@ class SuccessFailureHandler:
 			Init.add_line(f'{Symbol.ok}\n{CursorChar.r(terminal.width // 2 - 22)}')
 
 
-def init_application(config):
+def init_application(config, bpytop_window):
 	# ? Init -------------------------------------------------------------------------------------->
 	if DEBUG:
 		TimeIt.start("Init")
 
-
-
-	# ? Start a thread checking for updates while running init
-	if config.update_check:
-		UpdateChecker.run()
-
-	init_screen_widget = Init()
+	# start running Init screen
+	init_screen_widget = Init(bpytop_window)
 
 	# ? Draw banner and init status
 	if config.show_init and not init_screen_widget.resized:
@@ -275,7 +273,6 @@ def main():
 
 	config = Config(CONFIG_FILE, DEBUG)
 
-	controller = Controller()
 	timer = Timer(update_ms=config.update_ms)
 	collector = Collector()
 
@@ -286,10 +283,18 @@ def main():
 	bpytop_window.reset()
 	bpytop_window.set_title('BpyTOP')
 
-	main_widget = MainWidget()
-	main_widget.init()
+	# Start a thread checking for updates while running init
+	version_checker: ThreadWithReturnValue = None
+	if config.update_check:
+		version_checker = ThreadWithReturnValue(target=checker_for_latest_version)
+		version_checker.start()
 
-	init_application(config)
+	init_application(config, bpytop_window)
+
+	# get result of version checkin
+	latest_version = None
+	if version_checker:
+		latest_version = version_checker.join(timeout=None)
 
 	if config.draw_clock:
 		Box.clock_on = True
@@ -300,12 +305,12 @@ def main():
 	# Start main application event loop
 	try:
 		while not False:
-			main_widget.terminal.refresh()
+			bpytop_window.terminal.refresh()
 			timer.stamp()
 
 			while timer.not_zero():
-				if controller.input_wait(timer.left()):
-					process_keys(controller)
+				if bpytop_window.controller.input_wait(timer.left()):
+					process_keys(bpytop_window.controller, latest_version)
 
 			collector.collect()
 			# TODO should be some drawing of results here
@@ -313,7 +318,7 @@ def main():
 		errlog.exception(f"{e}")
 		clean_quit(1)
 	else:
-		# ? Quit cleanly even if false starts being true...
+		# Quit cleanly even if false starts being true...
 		clean_quit()
 
 

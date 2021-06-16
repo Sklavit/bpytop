@@ -26,6 +26,7 @@ from bpytop.env import SYSTEM
 # from bpytop2 import CONFIG, THEME, errlog
 # from bpytop.old_consts import UNITS
 from bpytop.main_mvc import Controller
+from bpytop.old_classes import Menu
 
 THREAD_ERROR: int = 0
 
@@ -222,7 +223,7 @@ def readfile(file: str, default: str = "") -> str:
 	return default if out is None else out
 
 
-def process_keys(controller: Controller):
+def process_keys(controller: Controller, latest_version):
 	mouse_pos: Tuple[int, int] = (0, 0)
 	filtered: bool = False
 	global ARG_MODE
@@ -271,11 +272,11 @@ def process_keys(controller: Controller):
 		elif key in ["b", "n"]:
 			Netcollector.switch(key)
 		elif key in ["M", "escape"]:
-			Menu.main()
+			Menu.main_menu.show(latest_version)
 		elif key in ["o", "f2"]:
-			Menu.options()
+			Menu.options_menu.show()
 		elif key in ["h", "f1"]:
-			Menu.help()
+			Menu.help_menu.show()
 		elif key == "z":
 			Netcollector.reset = not Netcollector.reset
 			collector.collect(Netcollector, redraw=True)
