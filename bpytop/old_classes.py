@@ -32,7 +32,8 @@ from bpytop.old_functions import (
 	clean_quit,
 )
 from engine.universe.terminal.colors import Color
-from engine.universe.terminal.terminal_engine import CursorChar, Draw, create_box
+from engine.universe.terminal.terminal_engine import Draw, create_box
+from engine.universe.terminal.constants import CursorChar
 from engine.universe.terminal.terminal_widgets import Fx, Symbol
 
 

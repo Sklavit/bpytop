@@ -10,74 +10,33 @@ reporter = logging.getLogger("reporter")
 errlog = logging.getLogger("ErrorLogger")
 
 
-class CursorChar:
-	"""
-	Class with collection of cursor movement functions:
-	.t[o](line, column) | .r[ight](columns) | .l[eft](columns) | .u[p](lines) | .d[own](lines)
-	| .save() | .restore()
-	"""
-	@staticmethod
-	def to(line: int, col: int) -> str:
-		# * Move cursor to line, column
-		return f'\033[{line};{col}f'
-	@staticmethod
-	def right(x: int) -> str:
-		"""Move cursor right x columns."""
-		return f'\033[{x}C'
-	@staticmethod
-	def left(x: int) -> str:
-		"""Move cursor left x columns"""
-		return f'\033[{x}D'
-	@staticmethod
-	def up(x: int) -> str:
-		"""Move cursor up x lines"""
-		return f'\033[{x}A'
-	@staticmethod
-	def down(x: int) -> str:
-		"""Move cursor down x lines"""
-		return f'\033[{x}B'
+class BufferedStdout:  # Draw:
+	def __init__(self):
+		"""
+		Holds the draw buffer and manages IO blocking queue
+		* .buffer([+]name[!], *args, append=False, now=False, z=100) : Add *args to buffer
+		* - Adding "+" prefix to name sets append to True and appends to name's current string
+		* - Adding "!" suffix to name sets now to True and print name's current string
+		* .out(clear=False) : Print all strings in buffer, clear=True clear all buffers after
+		* .now(*args) : Prints all arguments as a string
+		* .clear(*names) : Clear named buffers, all if no argument
+		* .last_screen() : Prints all saved buffers
+		"""
+		self.strings: Dict[str, str] = {}
+		self.z_order: Dict[str, int] = {}
+		self.saved: Dict[str, str] = {}
+		self.save: Dict[str, bool] = {}
+		self.once: Dict[str, bool] = {}
+		self.idle = threading.Event()
+		self.idle.set()
 
-	save: str = "\033[s" 				#* Save cursor position
-	restore: str = "\033[u" 			#* Restore saved cursor postion
-	t = to
-	r = right
-	l = left
-	u = up
-	d = down
-
-
-class Draw:
-	"""
-	Holds the draw buffer and manages IO blocking queue
-	* .buffer([+]name[!], *args, append=False, now=False, z=100) : Add *args to buffer
-	* - Adding "+" prefix to name sets append to True and appends to name's current string
-	* - Adding "!" suffix to name sets now to True and print name's current string
-	* .out(clear=False) : Print all strings in buffer, clear=True clear all buffers after
-	* .now(*args) : Prints all arguments as a string
-	* .clear(*names) : Clear named buffers, all if no argument
-	* .last_screen() : Prints all saved buffers
-	"""
-	strings: Dict[str, str] = {}
-	z_order: Dict[str, int] = {}
-	saved: Dict[str, str] = {}
-	save: Dict[str, bool] = {}
-	once: Dict[str, bool] = {}
-	idle = threading.Event()
-	idle.set()
-
-	@classmethod
-	def now(cls, *args):
-		"""Wait for input reader and self to be idle then print to screen"""
-		controller.idle.wait()
-		cls.idle.wait()
-		cls.idle.clear()
+	def draw_soon(self, *args, **kwargs):  # now(cls, *args):
+		self.idle.wait()
+		self.idle.clear()
 		try:
-			print(*args, sep="", end="", flush=True)
-		except BlockingIOError:
-			pass
-			controller.idle.wait()
-			print(*args, sep="", end="", flush=True)
-		cls.idle.set()
+			print(*args, sep="", end="", flush=True, **kwargs)
+		finally:
+			self.idle.set()
 
 	@classmethod
 	def buffer(cls, name: str, *args: str, append: bool = False, now: bool = False, z: int = 100, only_save: bool = False, no_save: bool = False, once: bool = False):
@@ -106,7 +65,7 @@ class Draw:
 				cls.out(name)
 
 	@classmethod
-	def out(cls, *names: str, clear=False):
+	def draw_buffer(cls, *names: str, clear=False):  # out(cls, *names: str, clear=False):
 		out: str = ""
 		if not cls.strings:
 			return

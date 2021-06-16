@@ -9,7 +9,8 @@ from bpytop.old_classes import (
 )
 from bpytop.collectors import CpuCollector, MemCollector, NetCollector, ProcCollector
 from bpytop.old_functions import floating_humanizer, min_max, readfile
-from engine.universe.terminal.terminal_engine import CursorChar, Draw, create_box
+from engine.universe.terminal.terminal_engine import Draw, create_box
+from engine.universe.terminal.constants import CursorChar
 from engine.universe.terminal.terminal_widgets import Box, Fx, Meter, SubBox, Symbol
 from bpytop2 import CPU_NAME, THEME
 

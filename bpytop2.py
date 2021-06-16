@@ -46,7 +46,7 @@ from bpytop.config import *
 # )
 from bpytop.debug_utils import TimeIt
 from bpytop.env import *
-from bpytop.event_loop import Timer, run_event_loop
+from bpytop.event_loop import Timer
 from bpytop.main_mvc import MainWidget
 from bpytop.old_classes import Init
 from bpytop.theme import Theme
@@ -54,7 +54,11 @@ from bpytop.old_functions import (
 	clean_quit, get_cpu_name, now_awake, now_sleeping, process_keys,
 	quit_sigint,
 )
-from engine.universe.terminal.terminal_engine import CursorChar, Draw
+from engine.universe.terminal.terminal_engine import Draw
+from engine.universe.terminal.constants import CursorChar
+
+from engine.universe import Universe
+
 
 if errors:
 	print ("ERROR!")
@@ -187,8 +191,7 @@ def init_application(config):
 	if DEBUG:
 		TimeIt.start("Init")
 
-	main_widget = MainWidget()
-	main_widget.init()
+
 
 	# ? Start a thread checking for updates while running init
 	if config.update_check:
@@ -277,6 +280,14 @@ def main():
 	collector = Collector()
 
 	global THEME
+
+	bpytop_window = Universe.get_active_stdinout_window()
+	bpytop_window.switch_to_alt_screen()
+	bpytop_window.reset()
+	bpytop_window.set_title('BpyTOP')
+
+	main_widget = MainWidget()
+	main_widget.init()
 
 	init_application(config)
 
